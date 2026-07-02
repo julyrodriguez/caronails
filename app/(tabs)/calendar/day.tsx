@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, Platform, FlatList } from "react-native";
+import { View, Text, Pressable, Platform, FlatList, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import AppHeader from "../../src/components/AppHeader";
@@ -51,6 +51,8 @@ function fmtMoney(n: number) {
 export default function CalendarDayScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ dayKey?: string }>();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 600;
 
   const dk = typeof params.dayKey === "string" ? params.dayKey : "";
   const day = React.useMemo(() => (dk ? parseDayKey(dk) : null), [dk]);
@@ -70,9 +72,7 @@ export default function CalendarDayScreen() {
   const facultyBlocks = day ? getBlocksForDay(day.getDay()) : [];
   const exam = dk ? getExamForDay(dk) : null;
 
-const dayKey= "2026-03-02";
-
-  // ✅ Filtrar turnos de Facultad
+  // Filtrar turnos de Facultad
   const items = React.useMemo(
     () => (rawItems as any[]).filter((it) => it.clientNameSnapshot !== "Facultad"),
     [rawItems]
@@ -92,7 +92,7 @@ const dayKey= "2026-03-02";
     let total = 0;
     let paidTotal = 0;
     for (const ap of sorted) {
-      if (ap.canceled) continue; // Excluir turnos cancelados
+      if (ap.canceled) continue;
       const amt = Number(ap.amount ?? 0) || 0;
       total += amt;
       if (ap.paid) paidTotal += amt;
@@ -100,347 +100,347 @@ const dayKey= "2026-03-02";
     return { total, paidTotal, pendingTotal: Math.max(0, total - paidTotal) };
   }, [sorted]);
 
-  if (day) {
-    const title = day.toLocaleDateString("es-AR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-
+  if (!day) {
     return (
       <View style={{ flex: 1, backgroundColor: THEME.bg }}>
         <AppHeader title="Turnos del día" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <Text style={{ color: THEME.muted, fontWeight: "700" }}>Fecha inválida o no seleccionada</Text>
+        </View>
+        <AppFooter showBack />
+      </View>
+    );
+  }
 
-        <FlatList
-          data={sorted}
-          keyExtractor={(it) => it.id}
-          contentContainerStyle={{
-            padding: 16,
-            paddingBottom: 140,
-            alignItems: "center",
-            gap: 12,
-          }}
-          ListHeaderComponent={
-            <View style={{ width: "100%", maxWidth: 560, gap: 12 }}>
-              <View
-                style={{
-                  backgroundColor: THEME.card,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 20,
-                  padding: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    fontWeight: "900",
-                    color: THEME.primary,
-                    textAlign: "center",
-                    fontSize: 18,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {title}
-                </Text>
-                <Text
-                  style={{
-                    marginTop: 8,
-                    fontWeight: "900",
-                    color: THEME.text,
-                    textAlign: "center",
-                    fontSize: 15,
-                  }}
-                >
-                  {sorted.length} turno{sorted.length === 1 ? "" : "s"}
-                </Text>
-              </View>
+  const titleStr = day.toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
-                {/* Faculty banner */}
-                {facultyBlocks.length > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: THEME.facultySoft,
-                      borderWidth: 1,
-                      borderColor: THEME.facultyBorder,
-                      borderRadius: 16,
-                      padding: 14,
-                      alignItems: "center",
-                    }}
-                  >
-                    {facultyBlocks.map((fb) => (
-                      <Text
-                        key={fb.id}
-                        style={{
-                          fontWeight: "900",
-                          color: THEME.faculty,
-                          textAlign: "center",
-                        }}
-                      >
-                        📚 {fb.label} • {fb.startTime} - {fb.endTime}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+  return (
+    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
+      <AppHeader title="Detalle Diario" />
 
-                {/* Exam banner */}
-                {exam && (
-                  <View
-                    style={{
-                      backgroundColor: THEME.examSoft,
-                      borderWidth: 1,
-                      borderColor: THEME.examBorder,
-                      borderRadius: 16,
-                      padding: 14,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontWeight: "900",
-                        color: THEME.exam,
-                        textAlign: "center",
-                      }}
-                    >
-                      📝 {exam.label}
-                      {exam.startTime && exam.endTime
-                        ? ` • ${exam.startTime} - ${exam.endTime}`
-                        : ""}
-                    </Text>
-                  </View>
-                )}
-
-              <View
-                style={{
-                  backgroundColor: THEME.card,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 20,
-                  padding: 20,
-                  gap: 12,
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#F3F4F6",
-                    borderRadius: 16,
-                    padding: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      color: THEME.muted,
-                      fontSize: 13,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    Total del día
-                  </Text>
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontWeight: "900",
-                      color: THEME.text,
-                      fontSize: 28,
-                    }}
-                  >
-                    ${fmtMoney(totals.total)}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    backgroundColor: "#DCFCE7",
-                    borderWidth: 1,
-                    borderColor: "#86EFAC",
-                    borderRadius: 16,
-                    padding: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      color: THEME.success,
-                      fontSize: 13,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    Pagado ✅
-                  </Text>
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontWeight: "900",
-                      color: THEME.text,
-                      fontSize: 24,
-                    }}
-                  >
-                    ${fmtMoney(totals.paidTotal)}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    backgroundColor: "#FEF3C7",
-                    borderWidth: 1,
-                    borderColor: "#FCD34D",
-                    borderRadius: 16,
-                    padding: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      color: THEME.warning,
-                      fontSize: 13,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    Pendiente ⏳
-                  </Text>
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontWeight: "900",
-                      color: THEME.text,
-                      fontSize: 24,
-                    }}
-                  >
-                    ${fmtMoney(totals.pendingTotal)}
-                  </Text>
-                </View>
-              </View>
-
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/calendar/month",
-                    params: { dayKey: dayKeyFromDate(day) },
-                  } as any)
-                }
-                style={{
-                  backgroundColor: THEME.primarySoft,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 18,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: THEME.primary,
-                    fontWeight: "900",
-                    fontSize: 15,
-                  }}
-                >
-                  ← Ver el mes completo
-                </Text>
-              </Pressable>
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={{ width: "100%", maxWidth: 560 }}>
-              <View
-                style={{
-                  marginTop: 10,
-                  backgroundColor: THEME.card,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 18,
-                  padding: 16,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ fontWeight: "900", color: THEME.text }}>
-                  Sin turnos
-                </Text>
-                <Text
-                  style={{
-                    marginTop: 4,
-                    color: THEME.muted,
-                    fontWeight: "700",
-                  }}
-                >
-                  No hay turnos cargados este día 💖
-                </Text>
-              </View>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: "/appointments/[appointmentId]", // tu detalle real
-                  params: {
-                    appointmentId: item.id, // o ap.id según tu loop
-                    params: { dayKey },
-                    backTo: "calendar/day",
-                  },
-                } as any)
-              }
+      <FlatList
+        data={sorted}
+        keyExtractor={(it) => it.id}
+        style={{ flex: 1, width: "100%" }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 140,
+          alignItems: "center",
+          gap: 12,
+        }}
+        ListHeaderComponent={
+          <View style={{ width: "100%", maxWidth: 520, gap: 14 }}>
+            {/* Header info */}
+            <View
               style={{
-                width: "100%",
-                maxWidth: 560,
                 backgroundColor: THEME.card,
                 borderWidth: 1,
                 borderColor: THEME.border,
-                borderRadius: 18,
-                padding: 14,
+                borderRadius: 24,
+                padding: 20,
+                alignItems: "center",
+                shadowColor: "#2E1E2F",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.04,
+                shadowRadius: 10,
               }}
             >
               <Text
                 style={{
                   fontWeight: "900",
-                  color: THEME.primary,
+                  color: THEME.text,
+                  textAlign: "center",
+                  fontSize: 18,
+                  textTransform: "capitalize",
                 }}
               >
-                {fmtHour(item)} • {item.clientNameSnapshot ?? "Clienta"}
+                {titleStr}
               </Text>
-
               <Text
                 style={{
                   marginTop: 6,
-                  fontWeight: "900",
-                  color: item.canceled
-                    ? "#dc2626"
-                    : item.paid
-                    ? THEME.success
-                    : THEME.warning,
+                  fontWeight: "800",
+                  color: THEME.primary,
+                  fontSize: 14,
                 }}
               >
-                ${fmtMoney(Number(item.amount ?? 0) || 0)} •{" "}
-                {item.canceled
-                  ? "Cancelado ❌"
-                  : item.paid
-                  ? "Pagado ✅"
-                  : "Pago pendiente ⏳"}
+                {sorted.length} turno{sorted.length === 1 ? "" : "s"} agendado{sorted.length === 1 ? "" : "s"}
               </Text>
+            </View>
 
-              {item.description ? (
+            {/* Faculty / Exam banners */}
+            {facultyBlocks.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: THEME.facultySoft,
+                  borderWidth: 1,
+                  borderColor: THEME.facultyBorder,
+                  borderRadius: 16,
+                  padding: 12,
+                  gap: 4,
+                }}
+              >
+                {facultyBlocks.map((fb) => (
+                  <Text
+                    key={fb.id}
+                    style={{
+                      fontWeight: "900",
+                      color: THEME.faculty,
+                      textAlign: "center",
+                      fontSize: 13,
+                    }}
+                  >
+                    📚 Bloque Facultad: {fb.label} ({fb.startTime} - {fb.endTime})
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {exam && (
+              <View
+                style={{
+                  backgroundColor: THEME.examSoft,
+                  borderWidth: 1,
+                  borderColor: THEME.examBorder,
+                  borderRadius: 16,
+                  padding: 12,
+                }}
+              >
                 <Text
                   style={{
-                    marginTop: 6,
-                    color: THEME.muted,
-                    fontWeight: "700",
+                    fontWeight: "900",
+                    color: THEME.exam,
+                    textAlign: "center",
+                    fontSize: 13,
                   }}
                 >
-                  {item.description}
+                  📝 Examen: {exam.label} {exam.startTime ? `(${exam.startTime} - ${exam.endTime})` : ""}
                 </Text>
-              ) : null}
-            </Pressable>
-          )}
-        />
+              </View>
+            )}
 
-        <AppFooter showMenu menuHref="/(tabs)/calendar" showBack />
-      </View>
-    );
-  }
+            {/* Financial summary blocks layout */}
+            <View style={{ gap: 10 }}>
+              <View
+                style={{
+                  backgroundColor: THEME.card,
+                  borderWidth: 1,
+                  borderColor: THEME.border,
+                  borderRadius: 18,
+                  padding: 16,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontWeight: "800", color: THEME.muted, fontSize: 14 }}>
+                  Monto Estimado Diario
+                </Text>
+                <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 20 }}>
+                  ${fmtMoney(totals.total)}
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                {/* Paid card */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#ECFDF5", // Sage pastel bg
+                    borderWidth: 1,
+                    borderColor: "rgba(92, 168, 133, 0.3)",
+                    borderRadius: 18,
+                    padding: 16,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontWeight: "900", color: THEME.success, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Pagado ✓
+                  </Text>
+                  <Text style={{ marginTop: 4, fontWeight: "900", color: THEME.text, fontSize: 18 }}>
+                    ${fmtMoney(totals.paidTotal)}
+                  </Text>
+                </View>
+
+                {/* Pending card */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: THEME.examSoft, // warm sand tone
+                    borderWidth: 1,
+                    borderColor: THEME.examBorder,
+                    borderRadius: 18,
+                    padding: 16,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontWeight: "900", color: THEME.exam, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Pendiente ⏳
+                  </Text>
+                  <Text style={{ marginTop: 4, fontWeight: "900", color: THEME.text, fontSize: 18 }}>
+                    ${fmtMoney(totals.pendingTotal)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Section label */}
+            <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 15, paddingLeft: 4 }}>
+                Cronograma de Turnos
+              </Text>
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/appointments",
+                    params: { date: dk },
+                  } as any)
+                }
+                style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, backgroundColor: THEME.primarySoft }}
+              >
+                <Text style={{ color: THEME.primary, fontWeight: "800", fontSize: 12 }}>＋ Agregar</Text>
+              </Pressable>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={{ width: "100%", maxWidth: 520, marginTop: 10 }}>
+            <View
+              style={{
+                backgroundColor: THEME.card,
+                borderWidth: 1,
+                borderColor: THEME.border,
+                borderRadius: 20,
+                padding: 32,
+                alignItems: "center",
+                shadowColor: "#2E1E2F",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.03,
+                shadowRadius: 10,
+              }}
+            >
+              <Text style={{ fontSize: 24, marginBottom: 8 }}>💅</Text>
+              <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 15 }}>
+                Día sin turnos
+              </Text>
+              <Text
+                style={{
+                  marginTop: 4,
+                  color: THEME.muted,
+                  fontWeight: "600",
+                  fontSize: 13,
+                  textAlign: "center",
+                }}
+              >
+                No hay citas agendadas para hoy. ¡Aprovecha para descansar! 💖
+              </Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/appointments/[appointmentId]",
+                params: {
+                  appointmentId: item.id,
+                  dayKey: dk,
+                  backTo: "/(tabs)/calendar/day",
+                },
+              } as any)
+            }
+            style={({ pressed }) => ({
+              width: "100%",
+              maxWidth: 520,
+              backgroundColor: THEME.card,
+              borderWidth: 1,
+              borderColor: item.canceled ? "rgba(239,68,68,0.2)" : THEME.border,
+              borderRadius: 18,
+              padding: 16,
+              opacity: pressed ? 0.95 : 1,
+              shadowColor: "#2E1E2F",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.03,
+              shadowRadius: 6,
+            })}
+          >
+            {/* Hour and client name */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text
+                style={{
+                  fontWeight: "900",
+                  color: THEME.text,
+                  fontSize: 16,
+                }}
+              >
+                ⏱ {fmtHour(item)} • {item.clientNameSnapshot ?? "Clienta"}
+              </Text>
+
+              {/* Status pill label */}
+              <View
+                style={{
+                  backgroundColor: item.canceled
+                    ? "#FEF2F2"
+                    : item.paid
+                    ? "#ECFDF5"
+                    : THEME.examSoft,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "900",
+                    color: item.canceled
+                      ? "#EF4444"
+                      : item.paid
+                      ? THEME.success
+                      : THEME.exam,
+                  }}
+                >
+                  {item.canceled ? "Cancelado" : item.paid ? "Pagado ✓" : "Pendiente"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Price tag and secondary info */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 10 }}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                {item.description ? (
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      color: THEME.muted,
+                      fontWeight: "600",
+                      fontSize: 13,
+                    }}
+                  >
+                    {item.description}
+                  </Text>
+                ) : (
+                  <Text style={{ color: THEME.muted, fontStyle: "italic", fontSize: 12, fontWeight: "500" }}>
+                    Sin descripción de servicio
+                  </Text>
+                )}
+              </View>
+              
+              <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 16 }}>
+                ${fmtMoney(Number(item.amount ?? 0) || 0)}
+              </Text>
+            </View>
+          </Pressable>
+        )}
+      />
+
+      <AppFooter showMenu menuHref="/(tabs)/calendar" showBack />
+    </View>
+  );
 }

@@ -19,36 +19,45 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: THEME.primary,
+        tabBarInactiveTintColor: THEME.muted,
         tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopColor: THEME.border,
-          height: 64,
-          paddingBottom: 0,
-          paddingTop: 5,
-          
+          backgroundColor: THEME.card,
+          borderTopColor: "rgba(233, 210, 220, 0.4)",
+          height: 68,
+          paddingBottom: Platform.OS === "ios" ? 18 : 10,
+          paddingTop: 8,
+          shadowColor: "#2E1E2F",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.02,
+          shadowRadius: 10,
+          ...Platform.select({
+            web: {
+              backdropFilter: "blur(12px)",
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+            },
+          }) as any,
         },
-        tabBarLabelStyle: { fontWeight: "800" },
+        tabBarLabelStyle: { fontWeight: "900", fontSize: 11 },
       }}
     >
       <Tabs.Screen
-  name="calendar/index"
-  options={{
-    title: "Calendario",
-    tabBarIcon: ({ color, size }) => (
-      <MaterialCommunityIcons
-        name="calendar-heart"
-        size={size}
-        color={color}
+        name="calendar/index"
+        options={{
+          title: "Calendario",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="calendar-heart"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
       />
-    ),
-  }}
-/>
 
       {/* ✅ Ocultar pantallas internas para que NO aparezcan como tabs */}
       <Tabs.Screen name="calendar/month" options={{ href: null }} />
       <Tabs.Screen name="calendar/day/[dayKey]" options={{ href: null }} />
-            <Tabs.Screen name="calendar/day" options={{ href: null }} />
-
+      <Tabs.Screen name="calendar/day" options={{ href: null }} />
 
       <Tabs.Screen
         name="appointments"
@@ -73,9 +82,19 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: "Estadisticas",
+          title: "Estadísticas",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="chart-line" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="faculty"
+        options={{
+          title: "Facultad",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="school" color={color} size={size} />
           ),
         }}
       />

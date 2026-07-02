@@ -56,17 +56,24 @@ function FlashBanner({
 
   const bg =
     flash.type === "ok"
-      ? "#DCFCE7"
+      ? "#ECFDF5"
       : flash.type === "warn"
-      ? "#FEF3C7"
-      : "#FEE2E2";
+      ? "#FFFBEB"
+      : "#FEF2F2";
 
   const border =
     flash.type === "ok"
-      ? "#86EFAC"
+      ? "#A7F3D0"
       : flash.type === "warn"
-      ? "#FCD34D"
+      ? "#FDE68A"
       : "#FCA5A5";
+
+  const textColor =
+    flash.type === "ok"
+      ? THEME.success
+      : flash.type === "warn"
+      ? THEME.exam
+      : "#DC2626";
 
   return (
     <Animated.View
@@ -90,15 +97,17 @@ function FlashBanner({
           borderColor: border,
           borderWidth: 1,
           borderRadius: 16,
-          padding: 12,
+          padding: 14,
           marginBottom: 12,
         }}
       >
-        <Text style={{ fontWeight: "900", color: THEME.text }}>
+        <Text style={{ fontWeight: "900", color: textColor, fontSize: 14 }}>
           {flash.title}
         </Text>
         {!!flash.message && (
-          <Text style={{ marginTop: 2, color: THEME.text }}>{flash.message}</Text>
+          <Text style={{ marginTop: 2, color: THEME.text, fontSize: 13, fontWeight: "600" }}>
+            {flash.message}
+          </Text>
         )}
       </Pressable>
     </Animated.View>
@@ -131,12 +140,11 @@ function ConfirmModal({
       <View
         style={{
           flex: 1,
-          backgroundColor: "rgba(0,0,0,0.35)",
+          backgroundColor: "rgba(46, 30, 47, 0.45)",
           justifyContent: "center",
-          padding: 16,
+          padding: 20,
         }}
       >
-        {/* overlay atrás */}
         <Pressable
           onPress={onCancel}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
@@ -145,48 +153,56 @@ function ConfirmModal({
         <View
           style={{
             width: "100%",
-            maxWidth: 520,
+            maxWidth: 460,
             alignSelf: "center",
             backgroundColor: THEME.card,
             borderWidth: 1,
             borderColor: THEME.border,
-            borderRadius: 20,
-            padding: 16,
-            gap: 12,
+            borderRadius: 24,
+            padding: 20,
+            gap: 14,
+            shadowColor: "#2E1E2F",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.16,
+            shadowRadius: 20,
           }}
         >
           <Text style={{ fontWeight: "900", fontSize: 18, color: THEME.text }}>
             {title}
           </Text>
-          <Text style={{ color: THEME.muted, fontWeight: "700" }}>{message}</Text>
+          <Text style={{ color: THEME.muted, fontWeight: "700", fontSize: 14, lineHeight: 20 }}>
+            {message}
+          </Text>
 
-          <View style={{ flexDirection: "row", gap: 10, justifyContent: "flex-end" }}>
+          <View style={{ flexDirection: "row", gap: 10, justifyContent: "flex-end", marginTop: 6 }}>
             <Pressable
               onPress={onCancel}
-              style={{
+              style={({ pressed }) => ({
                 backgroundColor: THEME.primarySoft,
                 borderWidth: 1,
                 borderColor: THEME.border,
-                borderRadius: 999,
+                borderRadius: 12,
                 paddingVertical: 10,
-                paddingHorizontal: 14,
-              }}
+                paddingHorizontal: 16,
+                opacity: pressed ? 0.8 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: THEME.primary }}>
+              <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 13 }}>
                 {cancelText}
               </Text>
             </Pressable>
 
             <Pressable
               onPress={onConfirm}
-              style={{
-                backgroundColor: danger ? "#c1121f" : THEME.primary,
-                borderRadius: 999,
+              style={({ pressed }) => ({
+                backgroundColor: danger ? "#DC2626" : THEME.primary,
+                borderRadius: 12,
                 paddingVertical: 10,
-                paddingHorizontal: 14,
-              }}
+                paddingHorizontal: 16,
+                opacity: pressed ? 0.85 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: "#fff" }}>
+              <Text style={{ fontWeight: "900", color: "#fff", fontSize: 13 }}>
                 {confirmText}
               </Text>
             </Pressable>
@@ -284,7 +300,6 @@ export default function ClientDetailScreen() {
       return;
     }
 
-    // ✅ Web: modal propio
     setConfirmOpen(true);
     scrollToTop();
   }
@@ -300,83 +315,88 @@ export default function ClientDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Turnos" />
+      <AppHeader title="Turnos de Clienta" />
 
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{
           padding: 16,
           gap: 14,
-          paddingBottom: 110, // ✅ para que no lo tape el footer
+          paddingBottom: 120,
           alignItems: "center",
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ width: "100%", maxWidth: 560, gap: 14 }}>
+        <View style={{ width: "100%", maxWidth: 520, gap: 14 }}>
           <FlashBanner flash={flash} onClose={() => setFlash(null)} />
 
-          {/* Card principal */}
+          {/* Client summary card */}
           <View
             style={{
               backgroundColor: THEME.card,
               borderWidth: 1,
               borderColor: THEME.border,
-              borderRadius: 20,
-              padding: 16,
+              borderRadius: 22,
+              padding: 20,
+              alignItems: "center",
+              shadowColor: "#2E1E2F",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.03,
+              shadowRadius: 10,
             }}
           >
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: "900",
-                color: THEME.primary,
-                textAlign:"center"
+                color: THEME.text,
+                textAlign: "center"
               }}
             >
               {client.name}
             </Text>
-
-            {client.phone ? (
-              <Text
-                style={{
-                  marginTop: 6,
-                  fontWeight: "700",
-                  color: THEME.muted,
-                }}
-              >
-                📞 {client.phone}
-              </Text>
-            ) : null}
           </View>
 
-          {/* Eliminar clienta */}
+          {/* Delete client button */}
           <Pressable
             onPress={handleDeleteClient}
             disabled={isDeleting}
-            style={{
-              backgroundColor: "#ffe5ec",
-              borderRadius: 18,
+            style={({ pressed }) => ({
+              backgroundColor: "#FEF2F2",
+              borderRadius: 16,
               paddingVertical: 14,
               alignItems: "center",
               borderWidth: 1,
-              borderColor: "#fecdd3",
-              opacity: isDeleting ? 0.6 : 1,
-            }}
+              borderColor: "rgba(220,38,38,0.2)",
+              opacity: (isDeleting || pressed) ? 0.8 : 1,
+            })}
           >
-            <Text style={{ fontWeight: "900", color: "#c1121f" }}>
-              {isDeleting ? "Eliminando..." : "Eliminar clienta"}
+            <Text style={{ fontWeight: "900", color: "#DC2626", fontSize: 14 }}>
+              {isDeleting ? "Eliminando..." : "Eliminar Clienta y Historial"}
             </Text>
           </Pressable>
 
-          {/* Historial */}
-          <Text style={{ fontWeight: "900", fontSize: 16, color: THEME.text, textAlign:"center" }}>
-            Historial de turnos
+          {/* History Header */}
+          <Text style={{ fontWeight: "900", fontSize: 15, color: THEME.text, textAlign: "left", paddingLeft: 4, marginTop: 10 }}>
+            Historial de Turnos
           </Text>
 
           {appointments.length === 0 ? (
-            <Text style={{ color: THEME.muted, fontWeight: "700", textAlign:"center" }}>
-              No tiene turnos todavía 💖
-            </Text>
+            <View
+              style={{
+                backgroundColor: THEME.card,
+                borderWidth: 1,
+                borderColor: THEME.border,
+                borderRadius: 20,
+                padding: 30,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 22, marginBottom: 8 }}>🌸</Text>
+              <Text style={{ color: THEME.muted, fontWeight: "700", textAlign: "center", fontSize: 14 }}>
+                No tiene turnos registrados todavía 💖
+              </Text>
+            </View>
           ) : (
             appointments.map((it) => {
               const date = it.startAt?.toDate
@@ -386,53 +406,81 @@ export default function ClientDetailScreen() {
               return (
                 <Pressable
                   key={it.id}
-                  onPress={() =>router.push({
-  pathname: "/appointments/[appointmentId]",
-  params: {
-    appointmentId: it.id,
-    from: "client",
-    clientId,
-    backTo: "/(tabs)/clients/[clientId]",
-  },
-} as any)}
-                  style={{
+                  onPress={() => router.push({
+                    pathname: "/appointments/[appointmentId]",
+                    params: {
+                      appointmentId: it.id,
+                      from: "client",
+                      clientId,
+                      backTo: "/(tabs)/clients/[clientId]",
+                    },
+                  } as any)}
+                  style={({ pressed }) => ({
                     backgroundColor: THEME.card,
                     borderWidth: 1,
-                    borderColor: THEME.border,
+                    borderColor: it.canceled ? "rgba(220,38,38,0.2)" : THEME.border,
                     borderRadius: 18,
-                    padding: 14,
-                  }}
+                    padding: 16,
+                    opacity: pressed ? 0.94 : 1,
+                    shadowColor: "#2E1E2F",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.02,
+                    shadowRadius: 6,
+                  })}
                 >
-                  <Text style={{ fontWeight: "900", color: THEME.primary }}>
-                    {date.toLocaleDateString("es-AR")} -{" "}
-                    {date.toLocaleTimeString("es-AR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14 }}>
+                      📅 {date.toLocaleDateString("es-AR")} -{" "}
+                      {date.toLocaleTimeString("es-AR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
 
-                  <Text
-                    style={{
-                      marginTop: 4,
-                      fontWeight: "900",
-                      color: it.canceled ? "#dc2626" : (it.paid ? THEME.success : THEME.warning),
-                    }}
-                  >
-                    ${it.amount?.toLocaleString("es-AR")} •{" "}
-                    {it.canceled ? "Cancelado ❌" : (it.paid ? "Pagado ✅" : "Pendiente ⏳")}
-                  </Text>
-
-                  {it.description ? (
-                    <Text
+                    <View
                       style={{
-                        marginTop: 4,
-                        fontWeight: "700",
-                        color: THEME.muted,
+                        backgroundColor: it.canceled
+                          ? "#FEF2F2"
+                          : it.paid
+                          ? "#ECFDF5"
+                          : THEME.examSoft,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 8,
                       }}
                     >
-                      {it.description}
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "900",
+                          color: it.canceled
+                            ? "#EF4444"
+                            : it.paid
+                            ? THEME.success
+                            : THEME.exam,
+                        }}
+                      >
+                        {it.canceled ? "Cancelado" : it.paid ? "Pagado" : "Pendiente"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 8 }}>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                      {it.description ? (
+                        <Text style={{ color: THEME.muted, fontWeight: "600", fontSize: 13 }} numberOfLines={1}>
+                          {it.description}
+                        </Text>
+                      ) : (
+                        <Text style={{ color: THEME.muted, fontStyle: "italic", fontSize: 12, fontWeight: "500" }}>
+                          Sin notas
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 15 }}>
+                      ${it.amount?.toLocaleString("es-AR")}
                     </Text>
-                  ) : null}
+                  </View>
                 </Pressable>
               );
             })
@@ -440,11 +488,10 @@ export default function ClientDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* ✅ Web confirm modal */}
       <ConfirmModal
         open={confirmOpen}
-        title="Eliminar clienta"
-        message="Se eliminarán todos sus turnos. ¿Estás segura?"
+        title="Eliminar Clienta"
+        message="Se eliminarán todos sus turnos. ¿Estás segura de eliminar permanentemente a esta clienta?"
         confirmText={isDeleting ? "Eliminando..." : "Eliminar"}
         cancelText="Cancelar"
         danger

@@ -1,28 +1,28 @@
 // src/lib/theme.ts
 export const THEME = {
-  bg: "#FFF7FB",
+  bg: "#FAF5F8",
   card: "#FFFFFF",
-  text: "#2A1B2D",
-  muted: "#7A667C",
+  text: "#2E1E2F",      // Deep Plum elegante
+  muted: "#826F84",
 
-  // Pink core
-  primary: "#E11D8F",      // fucsia elegante
-  primarySoft: "#FCE7F3",  // rosa suave
-  border: "#F4C2D8",
+  // Rose Gold core
+  primary: "#D48C9E",      // Rose Gold refinado
+  primarySoft: "#F9ECEF",  // Rosa sedoso
+  border: "#E9D2DC",       // Borde suave
 
-  // Status
-  success: "#16A34A",
-  warning: "#F59E0B",
+  // Status (pastel sofisticados)
+  success: "#5CA885",      // Verde salvia
+  warning: "#DFA559",      // Ámbar pastel
 
-  // Faculty (violeta/lavanda)
-  faculty: "#7C3AED",
-  facultySoft: "#EDE9FE",
-  facultyBorder: "#C4B5FD",
+  // Faculty (violeta/lavanda apagado)
+  faculty: "#89769B",
+  facultySoft: "#F2EEF5",
+  facultyBorder: "#D3CADB",
 
-  // Exams / Parciales (ámbar cálido)
-  exam: "#D97706",
-  examSoft: "#FEF3C7",
-  examBorder: "#FCD34D",
+  // Exams / Parciales (ámbar cálido/terracota suave)
+  exam: "#C58869",
+  examSoft: "#FAF1EC",
+  examBorder: "#E8D2C5",
 
-  shadow: "rgba(225, 29, 143, 0.14)",
+  shadow: "rgba(212, 140, 158, 0.12)",
 };

@@ -29,8 +29,8 @@ export default function ClientPicker({
   const { items } = useClientsSearch(q);
 
   return (
-    <View style={{ gap: 10, alignItems: "center" }}>
-      <Text style={{ fontWeight: "900", color: THEME.text, textAlign: "center" }}>
+    <View style={{ gap: 8, alignItems: "stretch", width: "100%" }}>
+      <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>
         Clienta
       </Text>
 
@@ -39,29 +39,39 @@ export default function ClientPicker({
         style={({ pressed }) => ({
           width: "100%",
           borderWidth: 1,
-          borderColor: THEME.border,
-          backgroundColor: THEME.primarySoft,
+          borderColor: value ? THEME.primary : THEME.border,
+          backgroundColor: value ? THEME.primarySoft : THEME.card,
           borderRadius: 16,
-          paddingVertical: 12,
-          paddingHorizontal: 14,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          flexDirection: "row",
+          justifyContent: "space-between",
           alignItems: "center",
           opacity: pressed ? 0.9 : 1,
           transform: pressed ? [{ scale: 0.99 }] : [{ scale: 1 }],
+          shadowColor: THEME.shadow,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: value ? 0.1 : 0.04,
+          shadowRadius: 10,
         })}
       >
-        <Text
-          numberOfLines={1}
-          style={{
-            fontWeight: "900",
-            color: value ? THEME.primary : THEME.muted,
-            textAlign: "center",
-          }}
-        >
-          {value ? value.clientName : "Elegir clienta…"}
-        </Text>
-
-        <Text style={{ marginTop: 2, fontSize: 12, color: THEME.muted }}>
-          Tocá para buscar o crear
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontWeight: "900",
+              color: value ? THEME.text : THEME.muted,
+              fontSize: 16,
+            }}
+          >
+            {value ? value.clientName : "Seleccionar clienta…"}
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: 11, color: THEME.muted, fontWeight: "600" }}>
+            {value ? "Tocá para cambiar de clienta" : "Tocá para buscar o crear una nueva"}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 16, color: THEME.primary, fontWeight: "900" }}>
+          {value ? "✓" : "＋"}
         </Text>
       </Pressable>
 
@@ -124,12 +134,12 @@ function PickerModal({
     <View
       style={{
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.35)",
+        backgroundColor: "rgba(46, 30, 47, 0.4)", // Plum overlay
         justifyContent: "center",
         padding: 16,
       }}
     >
-      {/* ✅ Overlay atrás: cierra tocando afuera */}
+      {/* Overlay click to close */}
       <Pressable
         onPress={onClose}
         style={{
@@ -141,18 +151,22 @@ function PickerModal({
         }}
       />
 
-      {/* ✅ Sheet arriba: recibe los toques */}
+      {/* Sheet Container */}
       <View
         style={{
           width: "100%",
-          maxWidth: 560,
+          maxWidth: 500,
           alignSelf: "center",
           backgroundColor: THEME.card,
-          borderRadius: 20,
+          borderRadius: 24,
           borderWidth: 1,
           borderColor: THEME.border,
-          padding: 14,
-          gap: 12,
+          padding: 20,
+          gap: 14,
+          shadowColor: "#2E1E2F",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 24,
         }}
       >
         {/* Header */}
@@ -161,11 +175,10 @@ function PickerModal({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 10,
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: "900", color: THEME.text }}>
-            Elegir clienta
+            Seleccionar Clienta
           </Text>
 
           <Pressable
@@ -173,14 +186,14 @@ function PickerModal({
             style={({ pressed }) => ({
               paddingVertical: 8,
               paddingHorizontal: 12,
-              borderRadius: 14,
+              borderRadius: 12,
               borderWidth: 1,
               borderColor: THEME.border,
               backgroundColor: THEME.primarySoft,
-              opacity: pressed ? 0.9 : 1,
+              opacity: pressed ? 0.8 : 1,
             })}
           >
-            <Text style={{ fontWeight: "900", color: THEME.primary }}>
+            <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 13 }}>
               Cerrar
             </Text>
           </Pressable>
@@ -190,18 +203,19 @@ function PickerModal({
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder="Buscar por nombre…"
+          placeholder="Escribe el nombre de la clienta…"
           placeholderTextColor={THEME.muted}
           autoFocus
           style={{
-            backgroundColor: THEME.card,
+            backgroundColor: THEME.bg,
             borderWidth: 1,
             borderColor: THEME.border,
             borderRadius: 14,
             paddingVertical: 12,
-            paddingHorizontal: 12,
-            fontWeight: "900",
+            paddingHorizontal: 14,
+            fontWeight: "700",
             color: THEME.text,
+            fontSize: 15,
           }}
         />
 
@@ -211,20 +225,25 @@ function PickerModal({
             onPress={createClient}
             style={({ pressed }) => ({
               backgroundColor: THEME.primary,
-              borderRadius: 16,
+              borderRadius: 14,
               paddingVertical: 12,
-              paddingHorizontal: 12,
+              paddingHorizontal: 14,
               alignItems: "center",
               opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+              shadowColor: THEME.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.16,
+              shadowRadius: 8,
             })}
           >
-            <Text style={{ fontWeight: "900", color: "#fff", textAlign: "center" }}>
-              + Nueva clienta: “{q.trim()}”
+            <Text style={{ fontWeight: "900", color: "#fff", textAlign: "center", fontSize: 14 }}>
+              ＋ Crear clienta: “{q.trim()}”
             </Text>
           </Pressable>
         ) : (
-          <Text style={{ color: THEME.muted, fontSize: 12 }}>
-            Tip: escribí al menos 2 letras para crear una nueva.
+          <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "600", paddingLeft: 4 }}>
+            Tip: escribe al menos 2 letras para poder crear una clienta nueva.
           </Text>
         )}
 
@@ -232,22 +251,23 @@ function PickerModal({
         <View
           style={{
             borderTopWidth: 1,
-            borderTopColor: THEME.border,
-            paddingTop: 12,
+            borderTopColor: "rgba(233, 210, 220, 0.4)",
+            paddingTop: 10,
           }}
         >
           <FlatList
             data={items}
             keyExtractor={(it) => it.id}
             keyboardShouldPersistTaps="handled"
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            style={{ maxHeight: 380 }}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            style={{ maxHeight: 280 }}
             ListEmptyComponent={
               <Text
                 style={{
                   color: THEME.muted,
                   textAlign: "center",
-                  paddingVertical: 18,
+                  paddingVertical: 24,
+                  fontWeight: "700",
                 }}
               >
                 No hay resultados
@@ -258,14 +278,14 @@ function PickerModal({
                 onPress={() => onPick(item)}
                 style={({ pressed }) => ({
                   borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 16,
+                  borderColor: pressed ? THEME.primary : THEME.border,
+                  borderRadius: 14,
                   paddingVertical: 12,
-                  paddingHorizontal: 12,
+                  paddingHorizontal: 14,
                   backgroundColor: pressed ? THEME.primarySoft : THEME.card,
                 })}
               >
-                <Text style={{ fontWeight: "900", color: THEME.text }}>
+                <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 15 }}>
                   {item.name}
                 </Text>
               </Pressable>

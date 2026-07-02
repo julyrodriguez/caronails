@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   Platform,
   StyleSheet,
+  Animated,
 } from "react-native";
 
 import AppHeader from "../src/components/AppHeader";
@@ -23,117 +24,40 @@ function nowMonthKey(d = new Date()) {
   return `${y}-${m}`;
 }
 
-function Pill({ label, active, onPress }: any) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        s.pill,
-        {
-          backgroundColor: active ? THEME.primary : THEME.primarySoft,
-          borderColor: active ? THEME.primary : THEME.border,
-        },
-      ]}
-    >
-      <Text style={{ fontWeight: "900", color: active ? "#fff" : THEME.primary, textAlign: "center" }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function Card({ children, style }: { children: React.ReactNode; style?: any }) {
-  return (
-    <View
-      style={[
-        s.card,
-        {
-          backgroundColor: THEME.card,
-          borderColor: THEME.border,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <Text style={{ fontWeight: "900", color: THEME.text, textAlign: "center" }}>{children}</Text>;
-}
-
-function Input(props: any) {
-  return (
-    <TextInput
-      {...props}
-      placeholderTextColor={THEME.muted}
-      style={[
-        s.input,
-        {
-          backgroundColor: THEME.primarySoft,
-          borderColor: THEME.border,
-          color: THEME.text,
-          textAlign: "center",
-        },
-        props.style,
-      ]}
-    />
-  );
-}
-
-function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[s.btn, { backgroundColor: THEME.primary, alignSelf: "center" }]}
-      android_ripple={{ color: "rgba(255,255,255,0.15)" }}
-    >
-      <Text style={{ color: "#fff", fontWeight: "900", textAlign: "center" }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-/** Contenedor responsive: centrado + maxWidth */
-function ResponsiveContainer({ children }: { children: React.ReactNode }) {
-  const { width } = useWindowDimensions();
-  const maxWidth = width >= 980 ? 980 : width >= 760 ? 760 : width;
-
-  return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 18 }}>
-      <View
-        style={{
-          width: "100%",
-          maxWidth,
-          alignSelf: "center",
-          gap: 12,
-          alignItems: "center",
-        }}
-      >
-        {children}
-      </View>
-    </View>
-  );
+function fmtMoney(n: number) {
+  return n.toLocaleString("es-AR");
 }
 
 export default function StatsScreen() {
   const [tab, setTab] = React.useState<"month" | "year">("month");
-
-  // ✅ Arranca cargado con el mes actual, pero lo podés editar a mano
   const [monthKey, setMonthKey] = React.useState(() => nowMonthKey());
   const [year, setYear] = React.useState(() => new Date().getFullYear());
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Estadísticas" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 0 : 10 }}>
 
-        <ResponsiveContainer>
-          <View style={s.tabsRow}>
-            <Pill label="Mensual" active={tab === "month"} onPress={() => setTab("month")} />
-            <Pill label="Anual" active={tab === "year"} onPress={() => setTab("year")} />
+        {/* Tab Selector Capsule */}
+        <View style={{ paddingHorizontal: 20, marginTop: 16, alignItems: "center" }}>
+          <View style={s.tabContainer}>
+            <Pressable
+              onPress={() => setTab("month")}
+              style={[s.tabButton, tab === "month" && s.tabButtonActive]}
+            >
+              <Text style={[s.tabText, tab === "month" && s.tabTextActive]}>
+                Control Mensual
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setTab("year")}
+              style={[s.tabButton, tab === "year" && s.tabButtonActive]}
+            >
+              <Text style={[s.tabText, tab === "year" && s.tabTextActive]}>
+                Balance Anual
+              </Text>
+            </Pressable>
           </View>
-        </ResponsiveContainer>
+        </View>
 
         <View style={{ flex: 1 }}>
           {tab === "month" ? (
@@ -148,99 +72,161 @@ export default function StatsScreen() {
 }
 
 function MonthlyView({ monthKey, setMonthKey }: any) {
-  const { width } = useWindowDimensions();
-  const isWide = width >= 900;
-
-  const currentMonth = React.useMemo(() => nowMonthKey(), []);
-  const { incomePaid, incomePending, supplies, net, setMonthlySupplies } = useMonthlyStats(monthKey);
+  const { incomePaid, incomePending, supplies, net, setMonthlySupplies } =
+    useMonthlyStats(monthKey);
 
   const [supInput, setSupInput] = React.useState(String(supplies));
   React.useEffect(() => setSupInput(String(supplies)), [supplies]);
 
-  // ✅ Validación suave: deja escribir, pero si no cumple, no cambia stats todavía
-  function onChangeMonth(v: string) {
-    const clean = v.replace(/[^\d-]/g, "");
-    setMonthKey(clean);
+  function nextMonth() {
+    const [y, m] = monthKey.split("-").map(Number);
+    if (!y || !m) return;
+    const date = new Date(y, m - 1, 1);
+    date.setMonth(date.getMonth() + 1);
+    const newY = date.getFullYear();
+    const newM = String(date.getMonth() + 1).padStart(2, "0");
+    setMonthKey(`${newY}-${newM}`);
   }
+
+  function prevMonth() {
+    const [y, m] = monthKey.split("-").map(Number);
+    if (!y || !m) return;
+    const date = new Date(y, m - 1, 1);
+    date.setMonth(date.getMonth() - 1);
+    const newY = date.getFullYear();
+    const newM = String(date.getMonth() + 1).padStart(2, "0");
+    setMonthKey(`${newY}-${newM}`);
+  }
+
+  const displayMonthName = React.useMemo(() => {
+    const [y, m] = monthKey.split("-").map(Number);
+    if (!y || !m) return monthKey;
+    const date = new Date(y, m - 1, 1);
+    return date.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+  }, [monthKey]);
 
   async function saveSupplies() {
     const n = Number(supInput);
-    if (!Number.isFinite(n) || n < 0) return Alert.alert("Insumos inválido", "Usá un número >= 0");
+    if (!Number.isFinite(n) || n < 0) {
+      Alert.alert("Insumos inválido", "El valor debe ser mayor o igual a 0.");
+      return;
+    }
     await setMonthlySupplies(n);
-    Alert.alert("Listo", "Insumos guardados 💖");
+    Alert.alert("Guardado", "Insumos del mes actualizados correctamente 🌸");
   }
-
-  const isValidMonthKey = /^\d{4}-\d{2}$/.test(monthKey);
 
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 26 }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120, alignItems: "center" }}
       keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator
+      showsVerticalScrollIndicator={false}
     >
-      <ResponsiveContainer>
-        <View style={[{ gap: 12, width: "100%", alignItems: "center" }, isWide ? s.centerCol : null]}>
-          <Card style={s.fullCentered}>
-            <FieldLabel>Mes (YYYY-MM)</FieldLabel>
+      <View style={{ width: "100%", maxWidth: 520, gap: 18 }}>
+        
+        {/* Month Selector Form */}
+        <View style={s.card}>
+          <Text style={s.cardLabel}>Período Seleccionado</Text>
+          
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <Pressable
+              onPress={prevMonth}
+              style={({ pressed }) => ({
+                backgroundColor: THEME.primarySoft,
+                borderRadius: 14,
+                width: 44,
+                height: 44,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: THEME.border,
+                opacity: pressed ? 0.8 : 1,
+              }) as any}
+            >
+              <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>‹</Text>
+            </Pressable>
 
-            <Input
-              value={monthKey}
-              onChangeText={onChangeMonth}
-              placeholder={currentMonth}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            {!isValidMonthKey ? (
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Formato esperado: <Text style={{ fontWeight: "900", color: THEME.text }}>YYYY-MM</Text>
-                {"\n"}Ej: {currentMonth}
-              </Text>
-            ) : (
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Mes aplicado: <Text style={{ color: THEME.text, fontWeight: "900" }}>{monthKey}</Text>
-              </Text>
-            )}
-          </Card>
-
-          <Card style={s.fullCentered}>
-            <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 16, textAlign: "center" }}>
-              Resumen
+            <Text style={{ fontSize: 16, fontWeight: "900", color: THEME.text, textTransform: "capitalize", flex: 1, textAlign: "center" }}>
+              {displayMonthName}
             </Text>
 
-            <View style={{ gap: 6, alignItems: "center" }}>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Ingresos (pagados): ${incomePaid}
-              </Text>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Pendiente por cobrar: ${incomePending}
-              </Text>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Insumos: ${supplies}
-              </Text>
-            </View>
-
-            <View style={[s.highlight, { backgroundColor: THEME.primarySoft, borderColor: THEME.border }]}>
-              <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 16, textAlign: "center" }}>
-                Resultado: ${net}
-              </Text>
-            </View>
-          </Card>
-
-          <Card style={s.fullCentered}>
-            <FieldLabel>Cargar insumos del mes</FieldLabel>
-            <Input
-              value={supInput}
-              onChangeText={setSupInput}
-              keyboardType={Platform.OS === "web" ? "default" : "numeric"}
-              inputMode="decimal"
-              placeholder="0"
-            />
-            <PrimaryButton label="Guardar insumos" onPress={saveSupplies} />
-          </Card>
+            <Pressable
+              onPress={nextMonth}
+              style={({ pressed }) => ({
+                backgroundColor: THEME.primarySoft,
+                borderRadius: 14,
+                width: 44,
+                height: 44,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: THEME.border,
+                opacity: pressed ? 0.8 : 1,
+              }) as any}
+            >
+              <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>›</Text>
+            </Pressable>
+          </View>
         </View>
-      </ResponsiveContainer>
+
+        {/* Dynamic circular balance visual header */}
+        <View style={s.circleChartContainer}>
+          <View style={s.circleOuterRing}>
+            <View style={s.circleInnerFill}>
+              <Text style={s.circleLabel}>Resultado Neto</Text>
+              <Text style={s.circleValue}>${fmtMoney(net)}</Text>
+              <Text style={s.circleSubtitle}>Ganancia del mes</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Detailed accounts list */}
+        <View style={s.card}>
+          <Text style={s.cardLabel}>Detalle de Cuentas</Text>
+
+          <View style={s.detailRow}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={[s.indicatorDot, { backgroundColor: THEME.success }]} />
+              <Text style={s.detailTitle}>Ingresos Cobrados</Text>
+            </View>
+            <Text style={[s.detailPrice, { color: THEME.success }]}>${fmtMoney(incomePaid)}</Text>
+          </View>
+
+          <View style={s.detailRow}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={[s.indicatorDot, { backgroundColor: THEME.exam }]} />
+              <Text style={s.detailTitle}>Pendiente por Cobrar</Text>
+            </View>
+            <Text style={[s.detailPrice, { color: THEME.exam }]}>${fmtMoney(incomePending)}</Text>
+          </View>
+
+          <View style={[s.detailRow, { borderBottomWidth: 0 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={[s.indicatorDot, { backgroundColor: "#DC2626" }]} />
+              <Text style={s.detailTitle}>Gastos en Insumos</Text>
+            </View>
+            <Text style={[s.detailPrice, { color: "#DC2626" }]}>${fmtMoney(supplies)}</Text>
+          </View>
+        </View>
+
+        {/* Supplies form input */}
+        <View style={s.card}>
+          <Text style={s.cardLabel}>Cargar Insumos del Mes</Text>
+          <TextInput
+            value={supInput}
+            onChangeText={setSupInput}
+            keyboardType="numeric"
+            inputMode="decimal"
+            placeholder="Introduce los gastos de insumos..."
+            placeholderTextColor={THEME.muted}
+            style={[s.textInput, { marginBottom: 12 }]}
+          />
+          <Pressable onPress={saveSupplies} style={s.saveButton}>
+            <Text style={s.saveButtonText}>Guardar Insumos</Text>
+          </Pressable>
+        </View>
+
+      </View>
     </ScrollView>
   );
 }
@@ -250,125 +236,256 @@ function YearlyView({ year, setYear }: any) {
 
   return (
     <FlatList
-      style={{ flex: 1 }}
+      style={{ flex: 1, width: "100%" }}
       data={months}
       keyExtractor={(it) => it.monthKey}
-      ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-      showsVerticalScrollIndicator
-      contentContainerStyle={{ paddingBottom: 26 }}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 120,
+        width: "100%",
+        maxWidth: 520,
+        alignSelf: "center",
+      }}
       ListHeaderComponent={
-        <ResponsiveContainer>
-          <View style={{ gap: 12, width: "100%", alignItems: "center" }}>
-            <Card style={s.fullCentered}>
-              <FieldLabel>Año</FieldLabel>
-              <Input
-                value={String(year)}
-                onChangeText={(v: string) => {
-                  const clean = v.replace(/[^\d]/g, "");
-                  const n = Number(clean);
-                  if (Number.isFinite(n)) setYear(n);
-                }}
-                keyboardType={Platform.OS === "web" ? "default" : "numeric"}
-                inputMode="numeric"
-                placeholder={String(new Date().getFullYear())}
-              />
-            </Card>
+        <View style={{ width: "100%", gap: 18, marginBottom: 14 }}>
+          {/* Year selector */}
+          <View style={s.card}>
+            <Text style={s.cardLabel}>Filtrar Año</Text>
+            <TextInput
+              value={String(year)}
+              onChangeText={(v: string) => {
+                const clean = v.replace(/[^\d]/g, "");
+                const n = Number(clean);
+                if (Number.isFinite(n)) setYear(n);
+              }}
+              keyboardType="numeric"
+              inputMode="numeric"
+              placeholder={String(new Date().getFullYear())}
+              style={s.textInput}
+            />
+          </View>
 
-            <Card style={s.fullCentered}>
-              <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 16, textAlign: "center" }}>
-                Resumen anual
-              </Text>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Total cobrado: ${totalPaid}
-              </Text>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Promedio mensual: ${Math.round(avgMonthly)}
-              </Text>
-            </Card>
+          {/* Yearly summary cards */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={[s.card, { flex: 1, alignItems: "center", paddingVertical: 18 }]}>
+              <Text style={s.summaryLabel}>Total Cobrado</Text>
+              <Text style={s.summaryValue}>${fmtMoney(totalPaid)}</Text>
+            </View>
+            <View style={[s.card, { flex: 1, alignItems: "center", paddingVertical: 18 }]}>
+              <Text style={s.summaryLabel}>Promedio Mensual</Text>
+              <Text style={s.summaryValue}>${fmtMoney(Math.round(avgMonthly))}</Text>
+            </View>
+          </View>
 
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 16, textAlign: "center" }}>
-                Mes a mes
+          <Text style={[s.cardLabel, { marginTop: 10, paddingLeft: 4 }]}>Mes a Mes</Text>
+        </View>
+      }
+      renderItem={({ item }) => (
+        <View style={{ width: "100%", marginBottom: 8 }}>
+          <View style={[s.card, { padding: 14 }]}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, textTransform: "capitalize" }}>
+                📅 {item.monthKey}
               </Text>
-              <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-                Scroll para ver todos los meses.
+              <View style={s.gridPill}>
+                <Text style={{ color: THEME.primary, fontWeight: "900", fontSize: 13 }}>
+                  ${fmtMoney(item.paid)}
+                </Text>
+              </View>
+            </View>
+            <View style={s.gridSubTextRow}>
+              <Text style={{ color: THEME.muted, fontWeight: "700", fontSize: 12 }}>
+                Pendiente: ${fmtMoney(item.pending)}
               </Text>
             </View>
           </View>
-        </ResponsiveContainer>
-      }
-      renderItem={({ item }) => (
-        <ResponsiveContainer>
-          <Card style={s.fullCentered}>
-            <Text style={{ fontWeight: "900", color: THEME.text, textAlign: "center" }}>{item.monthKey}</Text>
-            <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-              Cobrado: ${item.paid}
-            </Text>
-            <Text style={{ color: THEME.muted, fontWeight: "800", textAlign: "center" }}>
-              Pendiente: ${item.pending}
-            </Text>
-          </Card>
-        </ResponsiveContainer>
+        </View>
       )}
     />
   );
 }
 
 const s = StyleSheet.create({
-  tabsRow: {
+  tabContainer: {
     flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignSelf: "center",
-  },
-
-  pill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-
-  card: {
-    borderWidth: 1,
+    gap: 4,
+    backgroundColor: "rgba(233, 210, 220, 0.3)",
     borderRadius: 18,
-    padding: 14,
-    gap: 10,
-  },
-
-  fullCentered: {
+    padding: 4,
     width: "100%",
     maxWidth: 520,
-    alignSelf: "center",
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 14,
     alignItems: "center",
   },
-
-  input: {
+  tabButtonActive: {
+    backgroundColor: THEME.card,
+    shadowColor: THEME.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+  },
+  tabText: {
+    fontWeight: "900",
+    color: THEME.muted,
+    fontSize: 14,
+  },
+  tabTextActive: {
+    color: THEME.text,
+  },
+  card: {
     width: "100%",
+    backgroundColor: THEME.card,
+    borderRadius: 24,
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
+    borderColor: THEME.border,
+    padding: 20,
+    shadowColor: "#2E1E2F",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+  },
+  cardLabel: {
+    fontWeight: "900",
+    color: THEME.text,
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    paddingLeft: 2,
+  },
+  textInput: {
+    backgroundColor: THEME.bg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 16,
+    padding: 14,
+    fontWeight: "800",
+    color: THEME.text,
+    textAlign: "center",
+    fontSize: 15,
+  },
+  formatWarning: {
+    color: THEME.exam,
+    fontWeight: "700",
+    fontSize: 11,
+    textAlign: "center",
+    marginTop: 6,
+  },
+  formatSuccess: {
+    color: THEME.muted,
+    fontWeight: "700",
+    fontSize: 11,
+    textAlign: "center",
+    marginTop: 6,
+  },
+  circleChartContainer: {
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  circleOuterRing: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 6,
+    borderColor: THEME.primarySoft,
+    backgroundColor: THEME.card,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: THEME.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+  },
+  circleInnerFill: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circleLabel: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: THEME.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  circleValue: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: THEME.primary,
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  circleSubtitle: {
+    fontSize: 10,
+    color: THEME.muted,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(233, 210, 220, 0.4)",
+  },
+  indicatorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  detailTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: THEME.text,
+  },
+  detailPrice: {
+    fontSize: 15,
     fontWeight: "900",
   },
-
-  btn: {
-    width: "100%",
-    borderRadius: 18,
+  saveButton: {
+    backgroundColor: THEME.primary,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
   },
-
-  highlight: {
-    marginTop: 6,
-    width: "100%",
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    alignItems: "center",
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 14,
   },
-
-  centerCol: {
-    alignSelf: "center",
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: THEME.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: THEME.text,
+    marginTop: 4,
+  },
+  gridPill: {
+    backgroundColor: THEME.primarySoft,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  gridSubTextRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(233, 210, 220, 0.3)",
+    paddingTop: 8,
   },
 });

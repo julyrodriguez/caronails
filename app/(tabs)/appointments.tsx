@@ -56,29 +56,17 @@ function fmtTime(d: Date) {
   });
 }
 
-function formatDMY(d: Date) {
-  const dd = String(d.getDate()).padStart(2, "0");
+function formatYMD(d: Date) {
+  const yy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear());
-  return `${dd}/${mm}/${yy}`;
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }
 
-function parseDMY(s: string): Date | null {
-  const m = s.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!m) return null;
-
-  const dd = Number(m[1]);
-  const mm = Number(m[2]);
-  const yy = Number(m[3]);
-
-  if (mm < 1 || mm > 12) return null;
-  if (dd < 1 || dd > 31) return null;
-
-  const d = new Date(yy, mm - 1, dd);
-  if (d.getFullYear() !== yy || d.getMonth() !== mm - 1 || d.getDate() !== dd)
-    return null;
-
-  return d;
+function formatTimeHM(d: Date) {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 }
 
 function parseYMD(s: string): Date | null {
@@ -104,8 +92,12 @@ function Card({ children }: { children: React.ReactNode }) {
         backgroundColor: THEME.card,
         borderWidth: 1,
         borderColor: THEME.border,
-        borderRadius: 18,
-        padding: 14,
+        borderRadius: 22,
+        padding: 16,
+        shadowColor: "#2E1E2F",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.03,
+        shadowRadius: 10,
       }}
     >
       {children}
@@ -148,17 +140,24 @@ function FlashBanner({
 
   const bg =
     flash.type === "ok"
-      ? "#DCFCE7"
+      ? "#ECFDF5" // sage bg
       : flash.type === "warn"
-      ? "#FEF3C7"
-      : "#FEE2E2";
+      ? "#FFFBEB" // amber bg
+      : "#FEF2F2"; // red bg
 
   const border =
     flash.type === "ok"
-      ? "#86EFAC"
+      ? "#A7F3D0"
       : flash.type === "warn"
-      ? "#FCD34D"
+      ? "#FDE68A"
       : "#FCA5A5";
+
+  const textColor =
+    flash.type === "ok"
+      ? THEME.success
+      : flash.type === "warn"
+      ? THEME.exam
+      : "#DC2626";
 
   return (
     <Animated.View
@@ -182,15 +181,15 @@ function FlashBanner({
           borderColor: border,
           borderWidth: 1,
           borderRadius: 16,
-          padding: 12,
+          padding: 14,
           marginBottom: 12,
         }}
       >
-        <Text style={{ fontWeight: "900", color: THEME.text }}>
+        <Text style={{ fontWeight: "900", color: textColor, fontSize: 14 }}>
           {flash.title}
         </Text>
         {!!flash.message && (
-          <Text style={{ marginTop: 2, color: THEME.text }}>
+          <Text style={{ marginTop: 2, color: THEME.text, fontSize: 13, fontWeight: "600" }}>
             {flash.message}
           </Text>
         )}
@@ -261,11 +260,15 @@ function PrimaryButton({
             : isSecondary
             ? THEME.primarySoft
             : THEME.primary,
-          borderRadius: 18,
+          borderRadius: 16,
           paddingVertical: 14,
           alignItems: "center",
           borderWidth: isSecondary ? 1 : 0,
           borderColor: isSecondary ? THEME.border : "transparent",
+          shadowColor: isSecondary ? "transparent" : THEME.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isSecondary ? 0 : 0.16,
+          shadowRadius: 10,
         }}
       >
         <Text
@@ -325,15 +328,6 @@ export default function AppointmentsScreen() {
   const [showTime, setShowTime] = React.useState(false);
 
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isTestingNotification, setIsTestingNotification] = React.useState(false);
-
-  const [webDateText, setWebDateText] = React.useState(() =>
-    formatDMY(new Date())
-  );
-
-  React.useEffect(() => {
-    if (isWeb) setWebDateText(formatDMY(start));
-  }, [start, isWeb]);
 
   React.useEffect(() => {
     if (!params?.date) return;
@@ -346,10 +340,7 @@ export default function AppointmentsScreen() {
     next.setSeconds(0, 0);
 
     setStart(next);
-
-    if (isWeb) setWebDateText(formatDMY(next));
     scrollToTop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params?.date]);
 
   const quickHours = [
@@ -395,64 +386,6 @@ export default function AppointmentsScreen() {
     setStart(d);
   }
 
- async function testNotificationIn5Seconds() {
-  if (Platform.OS === "web") {
-    notify(
-      "warn",
-      "Solo en celular",
-      "La prueba de notificaciones no funciona en web."
-    );
-    return;
-  }
-
-  if (isTestingNotification) return;
-
-  try {
-    setIsTestingNotification(true);
-
-    const hasPermission = await requestNotificationPermissions();
-    if (!hasPermission) {
-      notify(
-        "err",
-        "Sin permisos",
-        "No se otorgaron permisos para notificaciones."
-      );
-      return;
-    }
-
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "💅 Prueba de notificación",
-        body: "Si ves esto, las notificaciones locales funcionan.",
-        sound: "default",
-        data: { test: true },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 5,
-      },
-    });
-
-    const list = await Notifications.getAllScheduledNotificationsAsync();
-    console.log("TEST notificationId:", id);
-    console.log("TEST programadas:", JSON.stringify(list, null, 2));
-
-    notify(
-      "ok",
-      "Prueba agendada",
-      "Te debería llegar una notificación en 5 segundos."
-    );
-  } catch (e: any) {
-    console.log("Error en prueba de notificación:", e);
-    notify(
-      "err",
-      "Error",
-      e?.message ?? "No se pudo programar la notificación de prueba."
-    );
-  } finally {
-    setIsTestingNotification(false);
-  }
-}
   async function createAppointment() {
     Keyboard.dismiss();
     if (isSaving) return;
@@ -482,8 +415,9 @@ export default function AppointmentsScreen() {
       const ref = collection(db, "accounts", accountId, "appointments");
       const startTs = Timestamp.fromDate(start);
 
-      const q = query(ref, where("startAt", "==", startTs), limit(1));
-      const snap = await getDocs(q);
+      // Check double booking
+      const qCheck = query(ref, where("startAt", "==", startTs), limit(1));
+      const snap = await getDocs(qCheck);
 
       if (!snap.empty) {
         notify(
@@ -507,53 +441,44 @@ export default function AppointmentsScreen() {
         updatedAt: serverTimestamp(),
       });
 
+      // Schedule local notification on mobile
       if (Platform.OS !== "web") {
         try {
           const notificationResult = await scheduleAppointmentNotification(
-  docRef.id,
-  client.clientName,
-  start
-);
-
-if (notificationResult.ok) {
-  await updateDoc(
-    doc(db, "accounts", accountId, "appointments", docRef.id),
-    {
-      notificationId: notificationResult.notificationId,
-      notificationStatus: "scheduled",
-    }
-  );
-} else {
-  await updateDoc(
-    doc(db, "accounts", accountId, "appointments", docRef.id),
-    {
-      notificationStatus: "failed",
-      notificationError: notificationResult.reason,
-      notificationErrorMessage: notificationResult.message,
-    }
-  );
-
-  notify(
-    "warn",
-    "Turno creado sin recordatorio",
-    notificationResult.message
-  );
-}
-
-          const list = await Notifications.getAllScheduledNotificationsAsync();
-          console.log(
-            "NOTIFICACIONES PROGRAMADAS:",
-            JSON.stringify(list, null, 2)
+            docRef.id,
+            client.clientName,
+            start
           );
+
+          if (notificationResult.ok) {
+            await updateDoc(
+              doc(db, "accounts", accountId, "appointments", docRef.id),
+              {
+                notificationId: notificationResult.notificationId,
+                notificationStatus: "scheduled",
+              }
+            );
+          } else {
+            await updateDoc(
+              doc(db, "accounts", accountId, "appointments", docRef.id),
+              {
+                notificationStatus: "failed",
+                notificationError: notificationResult.reason,
+                notificationErrorMessage: notificationResult.message,
+              }
+            );
+            notify(
+              "warn",
+              "Turno creado sin recordatorio",
+              notificationResult.message
+            );
+          }
         } catch (notificationError) {
-          console.log(
-            "El turno se guardó, pero falló la notificación:",
-            notificationError
-          );
+          console.log("El turno se guardó, pero falló la notificación:", notificationError);
         }
       }
 
-      notify("ok", "Listo", "Turno agregado 💖");
+      notify("ok", "Listo", "Turno agendado correctamente 💖");
 
       setClient(null);
       setAmount("");
@@ -572,49 +497,54 @@ if (notificationResult.ok) {
       ref={scrollRef}
       contentContainerStyle={{
         padding: 16,
-        paddingBottom: 60,
+        paddingBottom: 80,
         alignItems: "center",
       }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={{ width: "100%", maxWidth: 560, gap: 12 }}>
+      <View style={{ width: "100%", maxWidth: 520, gap: 14 }}>
         <FlashBanner flash={flash} onClose={() => setFlash(null)} />
 
+        {/* Client selector */}
         <Card>
           <ClientPicker value={client} onChange={handleClientChange} />
         </Card>
 
+        {/* Date Selector */}
         <Card>
           <Text
             style={{
               fontWeight: "900",
               color: THEME.text,
+              fontSize: 14,
               marginBottom: 8,
               textAlign: "center",
             }}
           >
-            Fecha
+            Fecha del Turno
           </Text>
 
           {!isWeb ? (
             <>
               <Pressable
                 onPress={() => setShowDate(true)}
-                style={{
+                style={({ pressed }) => ({
                   backgroundColor: THEME.primarySoft,
                   borderWidth: 1,
                   borderColor: THEME.border,
                   borderRadius: 14,
                   padding: 12,
                   justifyContent: "center",
-                }}
+                  opacity: pressed ? 0.9 : 1,
+                })}
               >
                 <Text
                   style={{
                     fontWeight: "900",
                     color: THEME.primary,
                     textAlign: "center",
+                    fontSize: 15,
                   }}
                 >
                   {fmtDate(start)}
@@ -625,10 +555,7 @@ if (notificationResult.ok) {
                 <DateTimePicker
                   value={start}
                   mode="date"
-                  onChange={(
-                    event: DateTimePickerEvent,
-                    selected?: Date
-                  ) => {
+                  onChange={(event: DateTimePickerEvent, selected?: Date) => {
                     setShowDate(false);
                     if (!selected) return;
                     setStartDateOnly(selected);
@@ -638,38 +565,42 @@ if (notificationResult.ok) {
             </>
           ) : (
             <>
+              {/* Quick shortcuts on web */}
               <View
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
                   gap: 8,
                   justifyContent: "center",
+                  marginBottom: 12,
                 }}
               >
                 {[
                   { label: "Hoy", days: 0 },
                   { label: "Mañana", days: 1 },
-                  { label: "+2", days: 2 },
-                  { label: "+3", days: 3 },
-                  { label: "+7", days: 7 },
+                  { label: "+2 días", days: 2 },
+                  { label: "+3 días", days: 3 },
+                  { label: "+7 días", days: 7 },
                 ].map((b) => (
                   <Pressable
                     key={b.label}
                     onPress={() => applyQuickDate(b.days)}
-                    style={{
+                    style={({ pressed }) => ({
                       backgroundColor: THEME.primarySoft,
-                      borderRadius: 14,
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
+                      borderRadius: 12,
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
                       borderWidth: 1,
                       borderColor: THEME.border,
                       justifyContent: "center",
-                    }}
+                      opacity: pressed ? 0.8 : 1,
+                    })}
                   >
                     <Text
                       style={{
-                        fontWeight: "900",
+                        fontWeight: "800",
                         color: THEME.primary,
+                        fontSize: 12,
                         textAlign: "center",
                       }}
                     >
@@ -679,59 +610,51 @@ if (notificationResult.ok) {
                 ))}
               </View>
 
-              <Text
-                style={{
-                  marginTop: 10,
-                  color: THEME.muted,
-                  fontSize: 12,
-                  textAlign: "center",
-                }}
-              >
-                Fecha (dd/mm/aaaa)
-              </Text>
-
+              {/* HTML5 Date Input on Web */}
               <TextInput
-                value={webDateText}
+                // @ts-ignore
+                type="date"
+                value={formatYMD(start)}
                 onChangeText={(t) => {
-                  setWebDateText(t);
-                  const parsed = parseDMY(t);
+                  const parsed = parseYMD(t);
                   if (parsed) setStartDateOnly(parsed);
                 }}
-                placeholder={formatDMY(new Date())}
-                placeholderTextColor={THEME.muted}
                 style={{
-                  marginTop: 6,
-                  backgroundColor: THEME.card,
+                  backgroundColor: THEME.bg,
                   borderWidth: 1,
                   borderColor: THEME.border,
                   borderRadius: 14,
                   padding: 12,
-                  fontWeight: "900",
+                  fontWeight: "700",
                   color: THEME.text,
                   textAlign: "center",
+                  fontSize: 15,
                 }}
               />
             </>
           )}
         </Card>
 
+        {/* Time Selector */}
         <Card>
           <Text
             style={{
               fontWeight: "900",
               color: THEME.text,
-              marginBottom: 8,
+              fontSize: 14,
+              marginBottom: 10,
               textAlign: "center",
             }}
           >
-            Hora inicio
+            Hora de Inicio
           </Text>
 
+          {/* Quick hour suggestion chips */}
           <View
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
-              gap: 8,
+              gap: 6,
               marginBottom: 12,
               justifyContent: "center",
             }}
@@ -747,21 +670,20 @@ if (notificationResult.ok) {
                     d.setHours(hh, mm, 0, 0);
                     setStart(d);
                   }}
-                  style={{
-                    backgroundColor: isSelected
-                      ? THEME.primary
-                      : THEME.primarySoft,
-                    borderRadius: 14,
+                  style={({ pressed }) => ({
+                    backgroundColor: isSelected ? THEME.primary : THEME.primarySoft,
+                    borderRadius: 10,
                     paddingVertical: 6,
                     paddingHorizontal: 10,
                     justifyContent: "center",
-                  }}
+                    opacity: pressed ? 0.85 : 1,
+                  })}
                 >
                   <Text
                     style={{
                       fontWeight: "800",
                       color: isSelected ? "#fff" : THEME.primary,
-                      textAlign: "center",
+                      fontSize: 12,
                     }}
                   >
                     {h}
@@ -771,33 +693,34 @@ if (notificationResult.ok) {
             })}
           </View>
 
+          {/* Minutes addition shortcuts */}
           <View
             style={{
               flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
+              gap: 6,
               justifyContent: "center",
               marginBottom: 12,
             }}
           >
-            {[15, 30, 60].map((m) => (
+            {[15, 30, 45, 60].map((m) => (
               <Pressable
                 key={m}
                 onPress={() => addMinutesToStart(m)}
-                style={{
+                style={({ pressed }) => ({
                   backgroundColor: THEME.card,
                   borderWidth: 1,
                   borderColor: THEME.border,
-                  borderRadius: 14,
-                  paddingVertical: 8,
-                  paddingHorizontal: 14,
-                }}
+                  borderRadius: 10,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  opacity: pressed ? 0.8 : 1,
+                })}
               >
                 <Text
                   style={{
-                    fontWeight: "900",
+                    fontWeight: "800",
                     color: THEME.text,
-                    textAlign: "center",
+                    fontSize: 12,
                   }}
                 >
                   +{m} min
@@ -806,23 +729,26 @@ if (notificationResult.ok) {
             ))}
           </View>
 
+          {/* Web HTML5 Time picker / Native Time dialog */}
           {!isWeb ? (
             <>
               <Pressable
                 onPress={() => setShowTime(true)}
-                style={{
+                style={({ pressed }) => ({
                   backgroundColor: THEME.primarySoft,
                   borderWidth: 1,
                   borderColor: THEME.border,
                   borderRadius: 14,
                   padding: 12,
-                }}
+                  opacity: pressed ? 0.9 : 1,
+                })}
               >
                 <Text
                   style={{
                     fontWeight: "900",
                     color: THEME.primary,
                     textAlign: "center",
+                    fontSize: 15,
                   }}
                 >
                   {fmtTime(start)}
@@ -845,66 +771,76 @@ if (notificationResult.ok) {
               )}
             </>
           ) : (
-            <View
-              style={{
-                backgroundColor: THEME.primarySoft,
-                borderWidth: 1,
-                borderColor: THEME.border,
-                borderRadius: 14,
-                padding: 12,
-                justifyContent: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "900",
-                  color: THEME.primary,
-                  textAlign: "center",
+            <View style={{ gap: 4 }}>
+              <TextInput
+                // @ts-ignore
+                type="time"
+                value={formatTimeHM(start)}
+                onChangeText={(t) => {
+                  const parts = t.split(":");
+                  const hh = parseInt(parts[0], 10);
+                  const mm = parseInt(parts[1], 10);
+                  if (!isNaN(hh) && !isNaN(mm)) {
+                    const next = new Date(start);
+                    next.setHours(hh, mm, 0, 0);
+                    setStart(next);
+                  }
                 }}
-              >
-                {fmtTime(start)}
-              </Text>
+                style={{
+                  backgroundColor: THEME.bg,
+                  borderWidth: 1,
+                  borderColor: THEME.border,
+                  borderRadius: 14,
+                  padding: 12,
+                  fontWeight: "700",
+                  color: THEME.text,
+                  textAlign: "center",
+                  fontSize: 15,
+                }}
+              />
               <Text
                 style={{
-                  marginTop: 4,
                   color: THEME.muted,
-                  fontSize: 12,
+                  fontSize: 11,
                   textAlign: "center",
+                  fontWeight: "600",
                 }}
               >
-                En web se elige con los sugeridos.
+                O ajusta con los sugeridos arriba.
               </Text>
             </View>
           )}
         </Card>
 
+        {/* Pricing and Details */}
         <Card>
           <Text
             style={{
               fontWeight: "900",
               color: THEME.text,
-              marginBottom: 8,
-              textAlign: "center",
+              fontSize: 14,
+              marginBottom: 6,
+              paddingLeft: 4,
             }}
           >
-            Monto (opcional)
+            Monto del Turno (opcional)
           </Text>
 
           <TextInput
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
-            placeholder="Ingrese un valor"
+            placeholder="Introduce el valor del servicio ($)"
             placeholderTextColor={THEME.muted}
             style={{
-              backgroundColor: THEME.card,
+              backgroundColor: THEME.bg,
               borderWidth: 1,
               borderColor: THEME.border,
               borderRadius: 14,
               padding: 12,
-              fontWeight: "900",
+              fontWeight: "700",
               color: THEME.text,
-              textAlign: "center",
+              fontSize: 15,
             }}
           />
 
@@ -912,22 +848,23 @@ if (notificationResult.ok) {
             style={{
               fontWeight: "900",
               color: THEME.text,
-              marginTop: 12,
-              textAlign: "center",
+              fontSize: 14,
+              marginTop: 14,
+              marginBottom: 6,
+              paddingLeft: 4,
             }}
           >
-            Descripción (opcional)
+            Notas / Descripción (opcional)
           </Text>
 
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Qué servicio se realizó..."
+            placeholder="Especifica el diseño, esculpido, semipermanente..."
             placeholderTextColor={THEME.muted}
             multiline
             style={{
-              marginTop: 6,
-              backgroundColor: THEME.card,
+              backgroundColor: THEME.bg,
               borderWidth: 1,
               borderColor: THEME.border,
               borderRadius: 14,
@@ -935,50 +872,50 @@ if (notificationResult.ok) {
               minHeight: 80,
               textAlignVertical: "top",
               color: THEME.text,
-              textAlign: "center",
+              fontWeight: "600",
+              fontSize: 14,
             }}
           />
 
+          {/* Paid switch pill */}
           <Pressable
             onPress={() => setPaid((p) => !p)}
-            style={{
-              marginTop: 12,
-              alignSelf: "flex-start",
-              backgroundColor: paid ? "#DCFCE7" : "#FEF3C7",
+            style={({ pressed }) => ({
+              marginTop: 16,
+              backgroundColor: paid ? "#ECFDF5" : THEME.examSoft,
               borderWidth: 1,
-              borderColor: paid ? "#86EFAC" : "#FCD34D",
-              borderRadius: 999,
-              paddingVertical: 8,
-              paddingHorizontal: 12,
+              borderColor: paid ? "rgba(92,168,133,0.3)" : THEME.examBorder,
+              borderRadius: 14,
+              paddingVertical: 12,
               width: "100%",
-            }}
+              opacity: pressed ? 0.9 : 1,
+            })}
           >
             <Text
               style={{
                 fontWeight: "900",
                 textAlign: "center",
-                color: paid ? THEME.success : THEME.warning,
+                color: paid ? THEME.success : THEME.exam,
+                fontSize: 14,
               }}
             >
-              {paid ? "Pagado ✅" : "Pago pendiente ⏳"}
+              {paid ? "Pago Recibido ✓" : "Pago Pendiente ⏳"}
             </Text>
           </Pressable>
         </Card>
 
-       
+        {/* Submit */}
         <PrimaryButton
-          label={isSaving ? "Guardando..." : "Agregar turno"}
+          label={isSaving ? "Agendando..." : "Confirmar Cita 💅"}
           onPress={createAppointment}
-          disabled={isSaving || isTestingNotification}
+          disabled={isSaving}
         />
       </View>
     </ScrollView>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Turnos" />
-
+    <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -987,10 +924,7 @@ if (notificationResult.ok) {
         {isWeb ? (
           Content
         ) : (
-          <TouchableWithoutFeedback
-            onPress={Keyboard.dismiss}
-            accessible={false}
-          >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             {Content}
           </TouchableWithoutFeedback>
         )}

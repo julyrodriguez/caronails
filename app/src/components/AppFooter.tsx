@@ -6,36 +6,9 @@ import { THEME } from "../lib/theme";
 type Props = {
   showBack?: boolean;
   backHref?: Href;
-  onBack?: Href
   showMenu?: boolean;
   menuHref?: Href;
 };
-
-function PillButton({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        backgroundColor: THEME.primarySoft,
-        borderWidth: 1,
-        borderColor: THEME.border,
-        borderRadius: 999,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        minWidth: 120,
-        alignItems: "center",
-      }}
-    >
-      <Text style={{ color: THEME.primary, fontWeight: "900" }}>{label}</Text>
-    </Pressable>
-  );
-}
 
 export default function AppFooter({
   showBack = false,
@@ -47,13 +20,13 @@ export default function AppFooter({
 
   function onBack() {
     if (backHref) return router.replace(backHref);
-    if (Platform.OS === "web") return router.replace("/");
+    if (Platform.OS === "web") return router.replace("/(tabs)/calendar");
     router.back();
   }
 
   function onMenu() {
     if (menuHref) return router.replace(menuHref);
-    router.replace("/");
+    router.replace("/(tabs)/calendar");
   }
 
   if (!showBack && !showMenu) return null;
@@ -65,28 +38,72 @@ export default function AppFooter({
         left: 0,
         right: 0,
         bottom: 0,
-        paddingHorizontal: 16,
-        paddingTop: 10,
-        paddingBottom: 16,
-        backgroundColor: THEME.bg,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: Platform.OS === "ios" ? 28 : 16,
+        backgroundColor: "rgba(250, 245, 248, 0.9)", // Glassy THEME.bg
         borderTopWidth: 1,
-        borderTopColor: THEME.border,
+        borderTopColor: "rgba(233, 210, 220, 0.4)", // THEME.border soft
+        ...Platform.select({
+          web: {
+            backdropFilter: "blur(12px)",
+          },
+        }) as any,
       }}
     >
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
-          gap: 10,
+          justifyContent: "center",
+          gap: 12,
+          maxWidth: 560,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
-        <View style={{ flex: 1 }}>
-          {showMenu ? <PillButton label="← Volver" onPress={onMenu} /> : null}
-        </View>
+        {showMenu ? (
+          <Pressable
+            onPress={onMenu}
+            style={({ pressed }) => ({
+              flex: 1,
+              backgroundColor: THEME.primarySoft,
+              borderWidth: 1,
+              borderColor: THEME.border,
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              opacity: pressed ? 0.8 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            })}
+          >
+            <Text style={{ color: THEME.primary, fontWeight: "900", fontSize: 14 }}>
+              ← Volver
+            </Text>
+          </Pressable>
+        ) : null}
 
-        <View style={{ flex: 1 }}>
-          {showBack ? <PillButton label="Inicio" onPress={onBack} /> : null}
-        </View>
+        {showBack ? (
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => ({
+              flex: 1,
+              backgroundColor: THEME.primary,
+              borderRadius: 14,
+              paddingVertical: 12,
+              alignItems: "center",
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+              shadowColor: THEME.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.1,
+              shadowRadius: 6,
+            })}
+          >
+            <Text style={{ color: "#fff", fontWeight: "900", fontSize: 14 }}>
+              Inicio
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

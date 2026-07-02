@@ -21,7 +21,6 @@ import { useAccount } from "../src/hooks/useAccount";
 import { THEME } from "../src/lib/theme";
 import AppFooter from "../src/components/AppFooter";
 
-
 import { scheduleAppointmentNotification, cancelNotification } from "../src/lib/notifications";
 
 type Appointment = {
@@ -69,17 +68,24 @@ function FlashBanner({
 
   const bg =
     flash.type === "ok"
-      ? "#DCFCE7"
+      ? "#ECFDF5"
       : flash.type === "warn"
-      ? "#FEF3C7"
-      : "#FEE2E2";
+      ? "#FFFBEB"
+      : "#FEF2F2";
 
   const border =
     flash.type === "ok"
-      ? "#86EFAC"
+      ? "#A7F3D0"
       : flash.type === "warn"
-      ? "#FCD34D"
+      ? "#FDE68A"
       : "#FCA5A5";
+
+  const textColor =
+    flash.type === "ok"
+      ? THEME.success
+      : flash.type === "warn"
+      ? THEME.exam
+      : "#DC2626";
 
   return (
     <Animated.View
@@ -103,15 +109,17 @@ function FlashBanner({
           borderColor: border,
           borderWidth: 1,
           borderRadius: 16,
-          padding: 12,
+          padding: 14,
           marginBottom: 12,
         }}
       >
-        <Text style={{ fontWeight: "900", color: THEME.text }}>
+        <Text style={{ fontWeight: "900", color: textColor, fontSize: 14 }}>
           {flash.title}
         </Text>
         {!!flash.message && (
-          <Text style={{ marginTop: 2, color: THEME.text }}>{flash.message}</Text>
+          <Text style={{ marginTop: 2, color: THEME.text, fontSize: 13, fontWeight: "600" }}>
+            {flash.message}
+          </Text>
         )}
       </Pressable>
     </Animated.View>
@@ -144,12 +152,11 @@ function ConfirmModal({
       <View
         style={{
           flex: 1,
-          backgroundColor: "rgba(0,0,0,0.35)",
+          backgroundColor: "rgba(46, 30, 47, 0.45)", // Plum overlay
           justifyContent: "center",
-          padding: 16,
+          padding: 20,
         }}
       >
-        {/* overlay atrás */}
         <Pressable
           onPress={onCancel}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
@@ -158,48 +165,56 @@ function ConfirmModal({
         <View
           style={{
             width: "100%",
-            maxWidth: 520,
+            maxWidth: 460,
             alignSelf: "center",
             backgroundColor: THEME.card,
             borderWidth: 1,
             borderColor: THEME.border,
-            borderRadius: 20,
-            padding: 16,
-            gap: 12,
+            borderRadius: 24,
+            padding: 20,
+            gap: 14,
+            shadowColor: "#2E1E2F",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.16,
+            shadowRadius: 20,
           }}
         >
           <Text style={{ fontWeight: "900", fontSize: 18, color: THEME.text }}>
             {title}
           </Text>
-          <Text style={{ color: THEME.muted, fontWeight: "700" }}>{message}</Text>
+          <Text style={{ color: THEME.muted, fontWeight: "700", fontSize: 14, lineHeight: 20 }}>
+            {message}
+          </Text>
 
-          <View style={{ flexDirection: "row", gap: 10, justifyContent: "flex-end" }}>
+          <View style={{ flexDirection: "row", gap: 10, justifyContent: "flex-end", marginTop: 6 }}>
             <Pressable
               onPress={onCancel}
-              style={{
+              style={({ pressed }) => ({
                 backgroundColor: THEME.primarySoft,
                 borderWidth: 1,
                 borderColor: THEME.border,
-                borderRadius: 999,
+                borderRadius: 12,
                 paddingVertical: 10,
-                paddingHorizontal: 14,
-              }}
+                paddingHorizontal: 16,
+                opacity: pressed ? 0.8 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: THEME.primary }}>
+              <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 13 }}>
                 {cancelText}
               </Text>
             </Pressable>
 
             <Pressable
               onPress={onConfirm}
-              style={{
-                backgroundColor: danger ? "#c1121f" : THEME.primary,
-                borderRadius: 999,
+              style={({ pressed }) => ({
+                backgroundColor: danger ? "#DC2626" : THEME.primary,
+                borderRadius: 12,
                 paddingVertical: 10,
-                paddingHorizontal: 14,
-              }}
+                paddingHorizontal: 16,
+                opacity: pressed ? 0.85 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: "#fff" }}>
+              <Text style={{ fontWeight: "900", color: "#fff", fontSize: 13 }}>
                 {confirmText}
               </Text>
             </Pressable>
@@ -215,18 +230,11 @@ export default function AppointmentDetailScreen() {
   const { accountId } = useAccount();
   const isWeb = Platform.OS === "web";
 
-  // ✅ ahora leemos contexto de navegación
   const params = useLocalSearchParams<{
     appointmentId?: string;
     from?: string;
-
-    // fallback de retorno
     backTo?: string;
-
-    // para volver al día exacto del calendario
     dayKey?: string;
-
-    // para volver a una clienta exacta
     clientId?: string;
   }>();
 
@@ -268,50 +276,38 @@ export default function AppointmentDetailScreen() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  // ✅ back inteligente: si hay historial, back. Si no, replace al fallback correcto.
   const smartBack = React.useCallback(() => {
-    // 1) Intento: volver por historial
-    // (en web a veces hay refresh y no existe history)
     try {
       router.back();
       return;
     } catch {}
 
-    // 2) Fallback por params
     const backTo = typeof params.backTo === "string" ? params.backTo : "";
 
     if (backTo) {
-      // volver a calendar/day con dayKey
-      if (backTo === "/calendar/day") {
-        router.replace(
-          {
-            pathname: backTo as any,
-            params: { dayKey: params.dayKey },
-          } as any
-        );
+      if (backTo === "/calendar/day" || backTo === "calendar/day") {
+        router.replace({
+          pathname: "/(tabs)/calendar/day",
+          params: { dayKey: params.dayKey },
+        } as any);
         return;
       }
 
-      // volver a clients/[clientId]
       if (
-        backTo === "/(tabs)/clients/[clientId]" &&
+        (backTo === "/(tabs)/clients/[clientId]" || backTo === "clients/[clientId]") &&
         typeof params.clientId === "string"
       ) {
-        router.replace(
-          {
-            pathname: backTo as any,
-            params: { clientId: params.clientId },
-          } as any
-        );
+        router.replace({
+          pathname: "/clients/[clientId]" as any,
+          params: { clientId: params.clientId },
+        } as any);
         return;
       }
 
-      // volver simple
       router.replace(backTo as any);
       return;
     }
 
-    // 3) Último fallback
     router.replace("/(tabs)/calendar" as any);
   }, [router, params]);
 
@@ -365,19 +361,17 @@ export default function AppointmentDetailScreen() {
         appointmentDate.getMonth() + 1
       ).padStart(2, "0")}`;
 
-      // Cancelar notificación anterior si existe
+      // Cancel previous notification if exists
       const prevNotifId = (appointment as any).notificationId;
       if (prevNotifId && typeof prevNotifId === "string") {
         try {
           await cancelNotification(prevNotifId);
-        } catch (_) {
-          // Si falla la cancelación, no bloquear el guardado
-        }
+        } catch (_) {}
       }
 
-      // Programar nueva notificación (solo si no está excluido)
+      // Schedule new notification on mobile
       let newNotificationId: string | null = null;
-      if (!(appointment as any).excludeFromNotifications) {
+      if (Platform.OS !== "web" && !(appointment as any).excludeFromNotifications) {
         const clientName = appointment.clientNameSnapshot || "Clienta";
         const result = await scheduleAppointmentNotification(
           appointment.id,
@@ -400,7 +394,7 @@ export default function AppointmentDetailScreen() {
         notificationId: newNotificationId,
       });
 
-      notify("ok", "Guardado", "Cambios actualizados 💅");
+      notify("ok", "Guardado", "Cambios actualizados correctamente 💅");
     } catch (e: any) {
       notify("err", "Error", e?.message ?? "Error al guardar");
     } finally {
@@ -440,7 +434,6 @@ export default function AppointmentDetailScreen() {
 
       if (isWeb) notify("ok", "Eliminado", "Turno eliminado.");
 
-      // ✅ al borrar, volver al lugar correcto
       smartBack();
     } catch (e: any) {
       notify("err", "Error", e?.message ?? "No se pudo eliminar el turno");
@@ -472,9 +465,9 @@ export default function AppointmentDetailScreen() {
   if (!appointmentId) {
     return (
       <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Turnos" />
-        <View style={{ padding: 20 }}>
-          <Text>No se encontró el ID del turno.</Text>
+        <AppHeader title="Detalle Turno" />
+        <View style={{ padding: 20, alignItems: "center" }}>
+          <Text style={{ color: THEME.muted, fontWeight: "700" }}>No se encontró el ID del turno.</Text>
         </View>
       </View>
     );
@@ -483,9 +476,9 @@ export default function AppointmentDetailScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Turnos" />
+        <AppHeader title="Detalle Turno" />
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator />
+          <ActivityIndicator color={THEME.primary} />
         </View>
       </View>
     );
@@ -494,19 +487,14 @@ export default function AppointmentDetailScreen() {
   if (!appointment) {
     return (
       <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Turnos" />
-        <View style={{ padding: 20 }}>
-          <Text>Este turno no existe o fue eliminado.</Text>
+        <AppHeader title="Detalle Turno" />
+        <View style={{ padding: 20, alignItems: "center" }}>
+          <Text style={{ color: THEME.muted, fontWeight: "700" }}>Este turno no existe o fue eliminado.</Text>
         </View>
       </View>
     );
   }
 
-  const date = appointment.startAt?.toDate
-    ? appointment.startAt.toDate()
-    : new Date(appointment.startAt?.seconds * 1000);
-
-  // ✅ elegir hacia dónde apunta el menú del footer según from/backTo
   const footerMenuHref =
     typeof params.backTo === "string"
       ? params.backTo
@@ -516,7 +504,7 @@ export default function AppointmentDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Editar Turno" />
+      <AppHeader title="Editar Cita" />
 
       <ScrollView
         ref={scrollRef}
@@ -528,40 +516,47 @@ export default function AppointmentDetailScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ width: "100%", maxWidth: 560, gap: 14 }}>
+        <View style={{ width: "100%", maxWidth: 520, gap: 14 }}>
           <FlashBanner flash={flash} onClose={() => setFlash(null)} />
 
+          {/* Service detail card */}
           <View
             style={{
               backgroundColor: THEME.card,
               borderWidth: 1,
               borderColor: THEME.border,
-              borderRadius: 18,
-              padding: 16,
+              borderRadius: 22,
+              padding: 20,
+              shadowColor: "#2E1E2F",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.04,
+              shadowRadius: 10,
             }}
           >
-            <Text style={{ fontWeight: "900", color: THEME.primary, marginBottom: 6 }}>
+            <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 20, textAlign: "center" }}>
               {appointment.clientNameSnapshot}
             </Text>
 
-            <Text style={{ color: THEME.muted }}>
-              {date.toLocaleDateString("es-AR")} -{" "}
-              {date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+            <Text style={{ color: THEME.muted, fontWeight: "700", textAlign: "center", marginTop: 4, fontSize: 14 }}>
+              Cita agendada: {appointmentDate.toLocaleDateString("es-AR")} -{" "}
+              {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
             </Text>
           </View>
 
-          {/* FECHA Y HORA */}
-          <Text style={{ fontWeight: "900", color: THEME.text, marginTop: 8 }}>
-            Fecha y Hora del Turno
+          {/* Date and Time Fields */}
+          <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>
+            Fecha y Hora de la Cita
           </Text>
 
           {isWeb ? (
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: THEME.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>
+                <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
                   Fecha
                 </Text>
                 <TextInput
+                  // @ts-ignore
+                  type="date"
                   value={appointmentDate.toISOString().split('T')[0]}
                   onChangeText={(text) => {
                     const [year, month, day] = text.split('-').map(Number);
@@ -573,24 +568,27 @@ export default function AppointmentDetailScreen() {
                       setAppointmentDate(newDate);
                     }
                   }}
-                  placeholder="YYYY-MM-DD"
                   style={{
                     borderWidth: 1,
-                    borderColor: THEME.primary,
+                    borderColor: THEME.border,
                     borderRadius: 14,
                     padding: 12,
                     backgroundColor: THEME.card,
                     color: THEME.text,
-                    fontWeight: "900",
+                    fontWeight: "700",
+                    fontSize: 15,
+                    textAlign: "center",
                   }}
                 />
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={{ color: THEME.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>
+                <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
                   Hora
                 </Text>
                 <TextInput
+                  // @ts-ignore
+                  type="time"
                   value={`${String(appointmentDate.getHours()).padStart(2, '0')}:${String(appointmentDate.getMinutes()).padStart(2, '0')}`}
                   onChangeText={(text) => {
                     const parts = text.split(':');
@@ -603,15 +601,16 @@ export default function AppointmentDetailScreen() {
                       setAppointmentDate(newDate);
                     }
                   }}
-                  placeholder="HH:MM"
                   style={{
                     borderWidth: 1,
-                    borderColor: THEME.primary,
+                    borderColor: THEME.border,
                     borderRadius: 14,
                     padding: 12,
                     backgroundColor: THEME.card,
                     color: THEME.text,
-                    fontWeight: "900",
+                    fontWeight: "700",
+                    fontSize: 15,
+                    textAlign: "center",
                   }}
                 />
               </View>
@@ -620,38 +619,40 @@ export default function AppointmentDetailScreen() {
             <View style={{ flexDirection: "row", gap: 10 }}>
               <Pressable
                 onPress={() => setShowDatePicker(true)}
-                style={{
+                style={({ pressed }) => ({
                   flex: 1,
-                  borderWidth: 2,
-                  borderColor: THEME.primary,
+                  borderWidth: 1,
+                  borderColor: THEME.border,
                   borderRadius: 14,
                   padding: 12,
                   backgroundColor: THEME.primarySoft,
-                }}
+                  opacity: pressed ? 0.9 : 1,
+                })}
               >
-                <Text style={{ color: THEME.primary, fontSize: 12, fontWeight: "700" }}>
+                <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
                   📅 Fecha
                 </Text>
-                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4 }}>
+                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
                   {appointmentDate.toLocaleDateString("es-AR")}
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={() => setShowTimePicker(true)}
-                style={{
+                style={({ pressed }) => ({
                   flex: 1,
-                  borderWidth: 2,
-                  borderColor: THEME.primary,
+                  borderWidth: 1,
+                  borderColor: THEME.border,
                   borderRadius: 14,
                   padding: 12,
                   backgroundColor: THEME.primarySoft,
-                }}
+                  opacity: pressed ? 0.9 : 1,
+                })}
               >
-                <Text style={{ color: THEME.primary, fontSize: 12, fontWeight: "700" }}>
+                <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
                   🕐 Hora
                 </Text>
-                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4 }}>
+                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
                   {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                 </Text>
               </Pressable>
@@ -676,8 +677,10 @@ export default function AppointmentDetailScreen() {
             />
           )}
 
-          {/* MONTO */}
-          <Text style={{ fontWeight: "900", color: THEME.text }}>Monto</Text>
+          {/* Amount input */}
+          <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>
+            Monto ($)
+          </Text>
           <TextInput
             value={amount}
             onChangeText={setAmount}
@@ -689,11 +692,15 @@ export default function AppointmentDetailScreen() {
               padding: 12,
               backgroundColor: THEME.card,
               color: THEME.text,
+              fontWeight: "700",
+              fontSize: 15,
             }}
           />
 
-          {/* DESCRIPCIÓN */}
-          <Text style={{ fontWeight: "900", color: THEME.text }}>Descripción</Text>
+          {/* Description notes */}
+          <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>
+            Descripción del Servicio
+          </Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
@@ -707,126 +714,139 @@ export default function AppointmentDetailScreen() {
               textAlignVertical: "top",
               backgroundColor: THEME.card,
               color: THEME.text,
+              fontWeight: "600",
+              fontSize: 14,
             }}
           />
 
-          {/* ESTADO DEL TURNO */}
-          <Text style={{ fontWeight: "900", color: THEME.text, marginTop: 8 }}>
-            Estado del Turno
+          {/* Switches for state */}
+          <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4, marginTop: 4 }}>
+            Estado de la Cita
           </Text>
 
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {/* PAGADO */}
+            {/* Paid status switch */}
             <Pressable
               onPress={() => {
-                if (!canceled) {
-                  setPaid((p) => !p);
-                }
+                if (!canceled) setPaid((p) => !p);
               }}
               disabled={canceled}
-              style={{
+              style={({ pressed }) => ({
                 flex: 1,
-                backgroundColor: canceled ? "#f3f4f6" : (paid ? "#DCFCE7" : "#FEF3C7"),
+                backgroundColor: canceled ? "#F3F4F6" : (paid ? "#ECFDF5" : THEME.examSoft),
                 borderWidth: 1,
-                borderColor: canceled ? "#d1d5db" : (paid ? "#86EFAC" : "#FCD34D"),
-                borderRadius: 999,
-                padding: 12,
+                borderColor: canceled ? "#D1D5DB" : (paid ? "rgba(92,168,133,0.3)" : THEME.examBorder),
+                borderRadius: 14,
+                paddingVertical: 12,
                 alignItems: "center",
-                opacity: canceled ? 0.5 : 1,
-              }}
+                opacity: (canceled || pressed) ? 0.8 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: canceled ? "#6b7280" : (paid ? THEME.success : THEME.warning) }}>
-                {paid ? "Pagado ✅" : "Pendiente ⏳"}
+              <Text style={{ fontWeight: "900", color: canceled ? "#9CA3AF" : (paid ? THEME.success : THEME.exam), fontSize: 14 }}>
+                {paid ? "Cobrado ✓" : "Impago ⏳"}
               </Text>
             </Pressable>
 
-            {/* CANCELADO */}
+            {/* Cancel state switch */}
             <Pressable
               onPress={() => setCanceled((c) => !c)}
-              style={{
+              style={({ pressed }) => ({
                 flex: 1,
-                backgroundColor: canceled ? "#FEE2E2" : "#f3f4f6",
+                backgroundColor: canceled ? "#FEF2F2" : "#F3F4F6",
                 borderWidth: 1,
-                borderColor: canceled ? "#FCA5A5" : "#d1d5db",
-                borderRadius: 999,
-                padding: 12,
+                borderColor: canceled ? "rgba(220,38,38,0.2)" : "#D1D5DB",
+                borderRadius: 14,
+                paddingVertical: 12,
                 alignItems: "center",
-              }}
+                opacity: pressed ? 0.8 : 1,
+              })}
             >
-              <Text style={{ fontWeight: "900", color: canceled ? "#dc2626" : "#6b7280" }}>
+              <Text style={{ fontWeight: "900", color: canceled ? "#DC2626" : "#4B5563", fontSize: 14 }}>
                 {canceled ? "Cancelado ❌" : "Activo"}
               </Text>
             </Pressable>
           </View>
 
-          {/* GUARDAR */}
+          {/* Save button */}
           <Pressable
             onPress={saveChanges}
             disabled={isSaving}
-            style={{
+            style={({ pressed }) => ({
               backgroundColor: isSaving ? THEME.border : THEME.primary,
               borderRadius: 14,
-              padding: 14,
+              paddingVertical: 14,
               alignItems: "center",
-              opacity: isSaving ? 0.7 : 1,
-            }}
+              opacity: (isSaving || pressed) ? 0.8 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+              shadowColor: THEME.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.16,
+              shadowRadius: 10,
+              marginTop: 8,
+            })}
           >
-            <Text style={{ color: "#fff", fontWeight: "900" }}>
-              {isSaving ? "Guardando..." : "Guardar cambios"}
+            <Text style={{ color: "#fff", fontWeight: "900", fontSize: 16 }}>
+              {isSaving ? "Guardando..." : "Guardar Cambios"}
             </Text>
           </Pressable>
 
-          {/* BORRAR */}
-          <Pressable
-            onPress={deleteAppointmentHandler}
-            disabled={isDeleting}
-            style={{
-              backgroundColor: "#ffe5ec",
-              borderRadius: 14,
-              padding: 14,
-              alignItems: "center",
-              opacity: isDeleting ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: "#c1121f", fontWeight: "900" }}>
-              {isDeleting ? "Borrando..." : "Borrar turno"}
-            </Text>
-          </Pressable>
+          {/* Action Row: Delete & Back */}
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {/* Delete button */}
+            <Pressable
+              onPress={deleteAppointmentHandler}
+              disabled={isDeleting}
+              style={({ pressed }) => ({
+                flex: 1,
+                backgroundColor: "#FEF2F2",
+                borderWidth: 1,
+                borderColor: "rgba(220,38,38,0.2)",
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: "center",
+                opacity: (isDeleting || pressed) ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ color: "#DC2626", fontWeight: "900", fontSize: 14 }}>
+                {isDeleting ? "Borrando..." : "Eliminar Cita"}
+              </Text>
+            </Pressable>
 
-          {/* ✅ VOLVER (por si querés un botón dentro del contenido también) */}
-          <Pressable
-            onPress={smartBack}
-            style={{
-              backgroundColor: THEME.primarySoft,
-              borderWidth: 1,
-              borderColor: THEME.border,
-              borderRadius: 14,
-              padding: 14,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: THEME.primary, fontWeight: "900" }}>Volver</Text>
-          </Pressable>
+            {/* Return button */}
+            <Pressable
+              onPress={smartBack}
+              style={({ pressed }) => ({
+                flex: 1,
+                backgroundColor: THEME.primarySoft,
+                borderWidth: 1,
+                borderColor: THEME.border,
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: "center",
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ color: THEME.primary, fontWeight: "900", fontSize: 14 }}>Volver</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 
-      {/* ✅ Web confirm */}
+      {/* Web confirm dialog */}
       <ConfirmModal
         open={confirmOpen}
-        title="Eliminar turno"
-        message="¿Seguro querés eliminar este turno?"
-        confirmText={isDeleting ? "Eliminando..." : "Eliminar"}
+        title="Eliminar Turno"
+        message="¿Estás completamente segura de eliminar esta cita? Esta acción no se puede deshacer."
+        confirmText={isDeleting ? "Borrando..." : "Eliminar"}
         cancelText="Cancelar"
         danger
         onCancel={() => setConfirmOpen(false)}
         onConfirm={doDeleteAppointment}
       />
 
-      {/* ✅ Footer usando smartBack */}
       <AppFooter
-        menuHref={footerMenuHref as any}
-        
-        onBack={smartBack as any}
+        showBack
+        backHref={footerMenuHref as any}
       />
     </View>
   );

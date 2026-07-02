@@ -5,6 +5,7 @@ import {
   Pressable,
   FlatList,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -33,7 +34,6 @@ function daysInMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 }
 function parseDayKey(dk: string): Date | null {
-  // dk = YYYY-MM-DD
   const m = dk?.match?.(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return null;
   const y = Number(m[1]);
@@ -81,19 +81,23 @@ function Pill({
   return (
     <Pressable
       onPress={onPress}
-      style={{
+      style={({ pressed }) => ({
         backgroundColor: primary ? THEME.primary : THEME.primarySoft,
         borderWidth: 1,
         borderColor: primary ? THEME.primary : THEME.border,
-        borderRadius: 999,
+        borderRadius: 12,
         paddingVertical: 10,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         alignItems: "center",
-      }}
+        flex: 1,
+        opacity: pressed ? 0.9 : 1,
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+      })}
     >
       <Text
         style={{
           fontWeight: "900",
+          fontSize: 14,
           color: primary ? "#fff" : THEME.primary,
         }}
       >
@@ -106,9 +110,9 @@ function Pill({
 export default function CalendarMonthDailyScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ dayKey?: string }>();
-  const isWeb = Platform.OS === "web";
+  const { width } = useWindowDimensions();
+  const isWide = width >= 600;
 
-  // Faculty & Exams
   const { facultyDaysOfWeek, getBlocksForDay } = useFacultySchedule();
   const { examDayKeys, getExamForDay } = useExamDays();
 
@@ -118,14 +122,12 @@ export default function CalendarMonthDailyScreen() {
     return d;
   }, []);
 
-  // ✅ Anchor = mes/año que estoy viendo
   const [anchor, setAnchor] = React.useState<Date>(() => {
     const fromDayKey =
       typeof params.dayKey === "string" ? parseDayKey(params.dayKey) : null;
     return fromDayKey ?? new Date();
   });
 
-  // ✅ Lista de días del mes (1..último día)
   const days = React.useMemo(() => {
     const count = daysInMonth(anchor);
     const out: Date[] = [];
@@ -137,7 +139,6 @@ export default function CalendarMonthDailyScreen() {
     return out;
   }, [anchor]);
 
-  // ✅ Traer todos los turnos del mes (1 query)
   const monthStart = startOfMonth(anchor);
   const monthEndExclusive = startOfNextMonth(anchor);
   const { items: monthItems } = useAppointmentsByRange(
@@ -145,11 +146,9 @@ export default function CalendarMonthDailyScreen() {
     monthEndExclusive
   );
 
-  // ✅ Agrupar por día (filtrando Facultad)
   const byDay = React.useMemo(() => {
     const map = new Map<string, any[]>();
     for (const it of monthItems as any[]) {
-      // ✅ Filtrar turnos de Facultad
       if (it.clientNameSnapshot === "Facultad") continue;
       const k =
         it.dayKey ??
@@ -172,7 +171,6 @@ export default function CalendarMonthDailyScreen() {
     return map;
   }, [monthItems]);
 
-  // ✅ Totales por día
   const totalsByDay = React.useMemo(() => {
     const map = new Map<
       string,
@@ -184,7 +182,7 @@ export default function CalendarMonthDailyScreen() {
       let total = 0;
       let paidTotal = 0;
       for (const ap of arr) {
-        if (ap.canceled) continue; // Excluir turnos cancelados
+        if (ap.canceled) continue;
         const amt = Number(ap.amount ?? 0) || 0;
         total += amt;
         if (ap.paid) paidTotal += amt;
@@ -194,7 +192,6 @@ export default function CalendarMonthDailyScreen() {
     return map;
   }, [days, byDay]);
 
-  // Conteo filtrado (sin Facultad) para el header
   const filteredCount = React.useMemo(() => {
     let c = 0;
     for (const [, arr] of byDay.entries()) c += arr.length;
@@ -212,24 +209,21 @@ export default function CalendarMonthDailyScreen() {
     setAnchor(d);
   }
 
-  const title = anchor.toLocaleDateString("es-AR", {
+  const monthLabel = anchor.toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
   });
 
-  // ✅ Scrollear al día si viene por params.dayKey
   const listRef = React.useRef<FlatList<Date>>(null);
   React.useEffect(() => {
     if (typeof params.dayKey !== "string") return;
     const target = parseDayKey(params.dayKey);
     if (!target) return;
 
-    // si el target no es del mismo mes, igual lo movemos
     setAnchor(new Date(target));
 
-    // esperamos que renderice el mes correcto
     requestAnimationFrame(() => {
-      const idx = target.getDate() - 1; // 0-based
+      const idx = target.getDate() - 1;
       if (idx >= 0) {
         try {
           listRef.current?.scrollToIndex({
@@ -240,82 +234,61 @@ export default function CalendarMonthDailyScreen() {
         } catch {}
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.dayKey]);
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Diario mensual" subtitle={title} />
+      <AppHeader title="Diario Mensual" subtitle={monthLabel} />
 
-      {/* Header navegación mes */}
+      {/* Nav month header */}
       <View
         style={{
-          paddingHorizontal: 16,
-          paddingTop: 12,
+          paddingHorizontal: 20,
+          paddingTop: 16,
           alignItems: "center",
+          width: "100%",
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 560,
+            maxWidth: 520,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            backgroundColor: THEME.card,
+            padding: 12,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: THEME.border,
+            shadowColor: "#2E1E2F",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.03,
+            shadowRadius: 6,
           }}
         >
           <Pressable onPress={prevMonth} style={{ padding: 10 }}>
-            <Text
-              style={{
-                fontSize: 22,
-                color: THEME.primary,
-                fontWeight: "900",
-              }}
-            >
-              {"<"}
-            </Text>
+            <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"‹"}</Text>
           </Pressable>
 
           <View style={{ alignItems: "center", flex: 1 }}>
-            <Text
-              style={{
-                fontWeight: "900",
-                color: THEME.text,
-                textAlign: "center",
-              }}
-            >
-              {title}
+            <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 16, textTransform: "capitalize" }}>
+              {monthLabel}
             </Text>
-            <Text
-              style={{
-                marginTop: 2,
-                color: THEME.muted,
-                fontWeight: "700",
-                textAlign: "center",
-              }}
-            >
-              {days.length} días • {filteredCount} turno
-              {filteredCount === 1 ? "" : "s"}
+            <Text style={{ marginTop: 2, color: THEME.muted, fontWeight: "700", fontSize: 12 }}>
+              {days.length} días • {filteredCount} turno{filteredCount === 1 ? "" : "s"}
             </Text>
           </View>
 
           <Pressable onPress={nextMonth} style={{ padding: 10 }}>
-            <Text
-              style={{
-                fontSize: 22,
-                color: THEME.primary,
-                fontWeight: "900",
-              }}
-            >
-              {">"}
-            </Text>
+            <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"›"}</Text>
           </Pressable>
         </View>
 
-        {/* Botón volver a hoy */}
-        <View style={{ width: "100%", maxWidth: 560, marginTop: 10 }}>
+        {/* Go to today button */}
+        <View style={{ width: "100%", maxWidth: 520, marginTop: 10, flexDirection: "row", gap: 10 }}>
           <Pill
-            label="Ir a hoy"
+            label="Ir a Hoy"
             onPress={() => {
               setAnchor(new Date());
               requestAnimationFrame(() => {
@@ -332,31 +305,23 @@ export default function CalendarMonthDailyScreen() {
         </View>
       </View>
 
-      {/* Lista de todos los días */}
+      {/* Days list */}
       <FlatList
         ref={listRef}
         data={days}
         keyExtractor={(d) => dayKeyFromDate(d)}
-        style={{ flex: 1, width: "100%" }} // ✅ Android: asegura ancho real del list
+        style={{ flex: 1, width: "100%" }}
         contentContainerStyle={{
-          paddingHorizontal: 16,
+          paddingHorizontal: 20,
           paddingTop: 14,
-          paddingBottom: 140, // ✅ espacio para footer fijo
-          width: "100%", // ✅ Android: evita shrink del container
+          paddingBottom: 140,
+          width: "100%",
         }}
         showsVerticalScrollIndicator={false}
-        onScrollToIndexFailed={() => {
-          setTimeout(() => {
-            try {
-              listRef.current?.scrollToIndex({ index: 0, animated: true });
-            } catch {}
-          }, 250);
-        }}
         renderItem={({ item: day }) => {
           const k = dayKeyFromDate(day);
           const arr = byDay.get(k) ?? [];
-          const totals =
-            totalsByDay.get(k) ?? { count: 0, total: 0, paidTotal: 0 };
+          const totals = totalsByDay.get(k) ?? { count: 0, total: 0, paidTotal: 0 };
 
           const isToday = sameDay(day, today);
           const has = totals.count > 0;
@@ -368,18 +333,15 @@ export default function CalendarMonthDailyScreen() {
             <View
               style={{
                 width: "100%",
-                maxWidth: 560,
+                maxWidth: 520,
                 marginBottom: 12,
                 alignSelf: "center",
               }}
             >
-              <Pressable
-                onPress={() => {
-                  // opcional
-                }}
+              <View
                 style={{
                   backgroundColor: THEME.card,
-                  borderWidth: exam ? 2 : 1,
+                  borderWidth: 1,
                   borderColor: exam
                     ? THEME.examBorder
                     : isToday
@@ -387,24 +349,29 @@ export default function CalendarMonthDailyScreen() {
                     : hasFaculty
                     ? THEME.facultyBorder
                     : THEME.border,
-                  borderRadius: 20,
-                  padding: 14,
+                  borderRadius: 22,
+                  padding: 16,
+                  shadowColor: "#2E1E2F",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: isToday ? 0.08 : 0.03,
+                  shadowRadius: isToday ? 10 : 6,
                 }}
               >
-                {/* Header del día */}
+                {/* Header of day block */}
                 <View
                   style={{
                     flexDirection: "row",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     justifyContent: "space-between",
                   }}
                 >
-                  <View style={{ flex: 1, paddingRight: 10 }}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
                     <Text
                       style={{
                         fontWeight: "900",
                         color: THEME.primary,
-                        textAlign: "left",
+                        fontSize: 15,
+                        textTransform: "capitalize",
                       }}
                     >
                       {day.toLocaleDateString("es-AR", { weekday: "long" })}
@@ -414,6 +381,7 @@ export default function CalendarMonthDailyScreen() {
                         marginTop: 2,
                         fontWeight: "900",
                         color: THEME.text,
+                        fontSize: 16,
                       }}
                     >
                       {day.toLocaleDateString("es-AR", {
@@ -423,19 +391,19 @@ export default function CalendarMonthDailyScreen() {
                       {isToday ? " • Hoy" : ""}
                     </Text>
 
-                    {/* Faculty / Exam indicators */}
+                    {/* Academic details */}
                     {facultyBlocks.length > 0 && (
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                      <View style={{ marginTop: 4, gap: 2 }}>
                         {facultyBlocks.map((fb) => (
                           <Text
                             key={fb.id}
                             style={{
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: "700",
                               color: THEME.faculty,
                             }}
                           >
-                            📚 {fb.label} • {fb.startTime} - {fb.endTime}
+                            📚 Cursada: {fb.label} ({fb.startTime}-{fb.endTime})
                           </Text>
                         ))}
                       </View>
@@ -443,120 +411,132 @@ export default function CalendarMonthDailyScreen() {
                     {exam && (
                       <Text
                         style={{
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: "900",
                           color: THEME.exam,
                           marginTop: 4,
                         }}
                       >
-                        📝 {exam.label}
-                        {exam.startTime && exam.endTime
-                          ? ` • ${exam.startTime} - ${exam.endTime}`
-                          : ""}
+                        📝 Parcial: {exam.label} {exam.startTime ? `(${exam.startTime})` : ""}
                       </Text>
                     )}
                   </View>
 
-                  {/* “píldoras” a la derecha */}
-                  <View style={{ alignItems: "flex-end" }}>
-                    <View
+                  {/* Summary badges on right */}
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
+                    <Pressable
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/calendar/day",
+                          params: { dayKey: k },
+                        } as any)
+                      }
                       style={{
                         backgroundColor: has ? THEME.primarySoft : THEME.bg,
                         borderWidth: 1,
                         borderColor: THEME.border,
-                        borderRadius: 999,
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
+                        borderRadius: 10,
+                        paddingVertical: 5,
+                        paddingHorizontal: 8,
                       }}
                     >
                       <Text
                         style={{
                           fontWeight: "900",
-                          color: has ? THEME.primary : THEME.muted,
+                          color: has ? THEME.text : THEME.muted,
+                          fontSize: 11,
                         }}
                       >
                         {totals.count} turno{totals.count === 1 ? "" : "s"}
                       </Text>
-                    </View>
+                    </Pressable>
 
                     <View
                       style={{
-                        marginTop: 8,
                         backgroundColor: THEME.primary,
-                        borderRadius: 999,
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        opacity: has ? 1 : 0.35,
+                        borderRadius: 10,
+                        paddingVertical: 5,
+                        paddingHorizontal: 8,
+                        opacity: has ? 1 : 0.3,
                       }}
                     >
-                      <Text style={{ fontWeight: "900", color: "#fff" }}>
+                      <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>
                         ${fmtMoney(totals.total)}
                       </Text>
                     </View>
                   </View>
                 </View>
 
-                {/* Subtotales: pagado / pendiente */}
+                {/* Subtotals & Individual appointments details */}
                 {has ? (
-                  <View
-                    style={{
-                      marginTop: 12,
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <View
-                      style={{
-                        flex: 1,
-                        borderWidth: 1,
-                        borderColor: THEME.border,
-                        backgroundColor: "#DCFCE7",
-                        borderRadius: 16,
-                        padding: 10,
-                        alignItems: "center",
-                        marginRight: 10,
-                      }}
-                    >
-                      <Text style={{ fontWeight: "900", color: THEME.success }}>
-                        Pagado
-                      </Text>
-                      <Text
-                        style={{
-                          marginTop: 2,
-                          fontWeight: "900",
-                          color: THEME.text,
-                        }}
-                      >
-                        ${fmtMoney(totals.paidTotal)}
-                      </Text>
+                  <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: "rgba(233, 210, 220, 0.4)", paddingTop: 10 }}>
+                    
+                    {/* Sage and Sand split totals */}
+                    <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+                      <View style={{ flex: 1, backgroundColor: "#ECFDF5", borderRadius: 10, paddingVertical: 6, alignItems: "center" }}>
+                        <Text style={{ fontSize: 10, fontWeight: "900", color: THEME.success }}>PAGADO</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "900", color: THEME.text, marginTop: 2 }}>${fmtMoney(totals.paidTotal)}</Text>
+                      </View>
+                      <View style={{ flex: 1, backgroundColor: THEME.examSoft, borderRadius: 10, paddingVertical: 6, alignItems: "center" }}>
+                        <Text style={{ fontSize: 10, fontWeight: "900", color: THEME.exam }}>PENDIENTE</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "900", color: THEME.text, marginTop: 2 }}>${fmtMoney(Math.max(0, totals.total - totals.paidTotal))}</Text>
+                      </View>
                     </View>
 
-                    <View
-                      style={{
-                        flex: 1,
-                        borderWidth: 1,
-                        borderColor: THEME.border,
-                        backgroundColor: "#FEF3C7",
-                        borderRadius: 16,
-                        padding: 10,
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text style={{ fontWeight: "900", color: THEME.warning }}>
-                        Pendiente
-                      </Text>
-                      <Text
-                        style={{
-                          marginTop: 2,
-                          fontWeight: "900",
-                          color: THEME.text,
-                        }}
-                      >
-                        $
-                        {fmtMoney(
-                          Math.max(0, totals.total - totals.paidTotal)
-                        )}
-                      </Text>
+                    {/* Appointments loop */}
+                    <View style={{ gap: 6 }}>
+                      {arr.map((ap: any) => (
+                        <Pressable
+                          key={ap.id}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/appointments/[appointmentId]",
+                              params: {
+                                appointmentId: ap.id,
+                                from: "calendarMonth",
+                                dayKey: k,
+                                backTo: "/(tabs)/calendar/month",
+                              },
+                            } as any)
+                          }
+                          style={({ pressed }) => ({
+                            backgroundColor: pressed ? THEME.primarySoft : THEME.bg,
+                            borderWidth: 1,
+                            borderColor: THEME.border,
+                            borderRadius: 12,
+                            padding: 10,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          })}
+                        >
+                          <View style={{ flex: 1, paddingRight: 6 }}>
+                            <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 13 }} numberOfLines={1}>
+                              {fmtHour(ap)} • {ap.clientNameSnapshot}
+                            </Text>
+                            {ap.description ? (
+                              <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "600", marginTop: 1 }} numberOfLines={1}>
+                                {ap.description}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <View style={{ alignItems: "flex-end" }}>
+                            <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 13 }}>
+                              ${ap.amount}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: "800",
+                                color: ap.canceled ? "#EF4444" : (ap.paid ? THEME.success : THEME.exam),
+                                marginTop: 1,
+                              }}
+                            >
+                              {ap.canceled ? "Cancelado" : (ap.paid ? "Cobrado ✓" : "Impago")}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
                     </View>
                   </View>
                 ) : (
@@ -565,106 +545,14 @@ export default function CalendarMonthDailyScreen() {
                       marginTop: 12,
                       color: THEME.muted,
                       fontWeight: "700",
+                      fontSize: 12,
                       textAlign: "center",
                     }}
                   >
-                    Sin turnos
+                    Sin citas registradas
                   </Text>
                 )}
-
-                {/* Turnos del día */}
-                {has ? (
-                  <View style={{ marginTop: 12 }}>
-                    {arr.map((ap: any, idx: number) => (
-                      <Pressable
-                        key={ap.id ?? `${k}-${idx}`}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/appointments/[appointmentId]",
-                            params: {
-                              appointmentId: ap.id,
-                              from: "calendarMonth",
-                              dayKey: k,
-                              backTo: "/calendar/month",
-                            },
-                          } as any)
-                        }
-                        style={{
-                          borderTopWidth: idx === 0 ? 0 : 1,
-                          borderTopColor: THEME.border,
-                          paddingVertical: 10,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <View style={{ flex: 1, paddingRight: 10 }}>
-                          <Text
-                            style={{
-                              fontWeight: "900",
-                              color: THEME.text,
-                            }}
-                          >
-                            {fmtHour(ap)} • {ap.clientNameSnapshot ?? "Clienta"}
-                          </Text>
-
-                          {ap.description ? (
-                            <Text
-                              style={{
-                                marginTop: 2,
-                                color: THEME.muted,
-                                fontWeight: "700",
-                              }}
-                              numberOfLines={1}
-                            >
-                              {ap.description}
-                            </Text>
-                          ) : (
-                            <Text
-                              style={{
-                                marginTop: 2,
-                                color: THEME.muted,
-                                fontWeight: "700",
-                              }}
-                              numberOfLines={1}
-                            >
-                              Sin descripcion
-                            </Text>
-                          )}
-                        </View>
-
-                        <View style={{ alignItems: "flex-end" }}>
-                          <Text
-                            style={{
-                              fontWeight: "900",
-                              color: THEME.primary,
-                            }}
-                          >
-                            ${fmtMoney(Number(ap.amount ?? 0) || 0)}
-                          </Text>
-                          <Text
-                            style={{
-                              marginTop: 2,
-                              fontWeight: "900",
-                              color: ap.canceled
-                                ? "#dc2626"
-                                : ap.paid
-                                ? THEME.success
-                                : THEME.warning,
-                            }}
-                          >
-                            {ap.canceled
-                              ? "Cancelado ❌"
-                              : ap.paid
-                              ? "Pagado ✅"
-                              : "Pago pendiente ⏳"}
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-              </Pressable>
+              </View>
             </View>
           );
         }}

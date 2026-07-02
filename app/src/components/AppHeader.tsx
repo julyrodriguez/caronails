@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 
@@ -7,49 +7,15 @@ import { auth } from "../lib/firebase";
 import { THEME } from "../lib/theme";
 
 type Props = {
-  title: string;
+  title?: string;
   subtitle?: string;
   showLogout?: boolean;
   hideSettings?: boolean;
 };
 
-function PillButton({
-  label,
-  onPress,
-  variant = "soft",
-}: {
-  label: string;
-  onPress: () => void;
-  variant?: "soft" | "primary";
-}) {
-  const isPrimary = variant === "primary";
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        backgroundColor: isPrimary ? THEME.primary : THEME.primarySoft,
-        borderWidth: 1,
-        borderColor: isPrimary ? THEME.primary : THEME.border,
-        borderRadius: 999,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-      }}
-    >
-      <Text
-        style={{
-          color: isPrimary ? "#fff" : THEME.primary,
-          fontWeight: "900",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export default function AppHeader({
-  subtitle = "Caro Nails ",
+  title = "Caro Nails",
+  subtitle,
   showLogout = true,
   hideSettings = false,
 }: Props) {
@@ -67,62 +33,106 @@ export default function AppHeader({
   return (
     <View
       style={{
-        paddingTop: 5,
-        paddingBottom: 14,
-        paddingHorizontal: 16,
+        paddingTop: Platform.OS === "ios" ? 48 : 16,
+        paddingBottom: 16,
+        paddingHorizontal: 20,
         backgroundColor: THEME.bg,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: "rgba(233, 210, 220, 0.5)", // THEME.border soft
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        zIndex: 10,
+        ...Platform.select({
+          web: {
+            position: "sticky",
+            top: 0,
+            backdropFilter: "blur(8px)",
+            backgroundColor: "rgba(250, 245, 248, 0.85)", // THEME.bg glassmorphic
+          },
+        }) as any,
       }}
     >
-      {/* Settings y Salir arriba a la derecha */}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, top: 40, zIndex: 999 }}>
-        {showLogout ? (
-          <>
-            {!hideSettings && (
-              <Pressable
-                onPress={goToSettings}
-                style={{
-                  backgroundColor: THEME.primarySoft,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 999,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ fontSize: 16, color: THEME.primary }}>⚙️</Text>
-              </Pressable>
-            )}
-            <PillButton label="Salir" onPress={onLogout} variant="primary" />
-          </>
+      {/* Title & Subtitle Section */}
+      <View style={{ flex: 1, marginRight: 12 }}>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 22,
+            fontWeight: "900",
+            color: THEME.text,
+            letterSpacing: -0.3,
+          }}
+        >
+          {title} {title === "Caro Nails" && "💅"}
+        </Text>
+        {subtitle ? (
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 13,
+              color: THEME.muted,
+              fontWeight: "600",
+              marginTop: 1,
+            }}
+          >
+            {subtitle}
+          </Text>
         ) : null}
       </View>
 
-      <View style={{ marginTop: 10 }}>
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "900",
-            color: THEME.text,
-            textAlign: "center",
-          }}
-        >
-          {subtitle}
-        </Text>
-        <Text
-          style={{
-            marginTop: 2,
-            color: THEME.muted,
-            fontWeight: "700",
-            textAlign: "center",
-          }}
-        >
+      {/* Action Buttons Section */}
+      {showLogout ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {!hideSettings && (
+            <Pressable
+              onPress={goToSettings}
+              style={({ pressed }) => ({
+                backgroundColor: THEME.primarySoft,
+                borderWidth: 1,
+                borderColor: THEME.border,
+                borderRadius: 14,
+                width: 40,
+                height: 40,
+                justifyContent: "center",
+                alignItems: "center",
+                opacity: pressed ? 0.8 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              })}
+            >
+              <Text style={{ fontSize: 18, color: THEME.primary }}>⚙️</Text>
+            </Pressable>
+          )}
           
-        </Text>
-      </View>
+          <Pressable
+            onPress={onLogout}
+            style={({ pressed }) => ({
+              backgroundColor: THEME.primary,
+              borderRadius: 14,
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              justifyContent: "center",
+              alignItems: "center",
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+              shadowColor: THEME.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.16,
+              shadowRadius: 8,
+            })}
+          >
+            <Text
+              style={{
+                color: "#fff",
+                fontWeight: "900",
+                fontSize: 14,
+              }}
+            >
+              Salir
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
