@@ -1,0 +1,23 @@
+{
+  "name": "Caro Nails",
+  "short_name": "Caro Nails",
+  "description": "Tu agenda de belleza & estudios",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF5F8",
+  "theme_color": "#D48C9E",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/iconCaro.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/iconCaro.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
