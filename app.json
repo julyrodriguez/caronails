@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "CaroNails",
+    "slug": "caronails",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/iconCaro.jpeg",
+    "scheme": "caronails2",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/iconCaro.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/iconCaro.jpeg",
+        "backgroundColor": "#FFFFFF"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.julyrodriguez.caronails",
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/iconCaro.jpeg"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {}
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": false,
+            "shrinkResources": false,
+            "enableMinifyInReleaseBuilds": false
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "387db567-b7a5-419f-abc4-2c6d31c6ed8c"
+      }
+    },
+    "owner": "julyrodriguez18"
+  }
+}
