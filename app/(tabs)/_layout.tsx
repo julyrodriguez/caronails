@@ -8,9 +8,12 @@ import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuthUser } from "../src/hooks/useAuthUser";
+import { useWebPushNotifications } from "../src/hooks/useWebPushNotifications";
 
 export default function TabsLayout() {
   const { user, loading } = useAuthUser();
+  useWebPushNotifications(user);
+
   if (loading) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
 
