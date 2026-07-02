@@ -92,7 +92,7 @@ export default function CalendarIndexScreen() {
     return d;
   }, []);
 
-  const [mode, setMode] = React.useState<"week" | "calendar">("week");
+  const [mode, setMode] = React.useState<"week" | "calendar">("calendar");
   const [anchor, setAnchor] = React.useState<Date>(() => new Date());
   const [selected, setSelected] = React.useState<Date>(() => new Date());
 
