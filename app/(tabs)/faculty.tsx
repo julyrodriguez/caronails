@@ -122,9 +122,15 @@ function DatePickerField({
       const year = value.getFullYear();
       const month = String(value.getMonth() + 1).padStart(2, "0");
       const day = String(value.getDate()).padStart(2, "0");
-      setText(`${year}-${month}-${day}`);
+      const dateStr = `${year}-${month}-${day}`;
+      if (text !== dateStr) {
+        setText(dateStr);
+      }
     } else if (!value) {
-      setText("");
+      // Solo limpiar el texto si el valor es null y el input tenía una fecha completa
+      if (text.length === 10) {
+        setText("");
+      }
     }
   }, [value]);
 
@@ -165,36 +171,26 @@ function DatePickerField({
   };
 
   if (isWeb) {
-    const dateStr = value && value instanceof Date && !isNaN(value.getTime()) ? dayKeyFromDate(value) : "";
     return (
       <View style={{ flex: 1 }}>
         <Text style={s.inputSubLabel}>{label}</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <TextInput
-            // @ts-ignore
-            type="date"
-            value={dateStr}
-            onChangeText={(val) => {
-              if (!val) {
-                onClear();
-              } else {
-                const parts = val.split("-").map(Number);
-                if (parts.length === 3) {
-                  const [y, m, d] = parts;
-                  if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-                    const date = new Date(y, m - 1, d);
-                    if (!isNaN(date.getTime())) {
-                      onChange(date);
-                      return;
-                    }
-                  }
-                }
-              }
-            }}
-            style={[s.textInput, { flex: 1, marginBottom: 0 }]}
+            value={text}
+            placeholder="AAAA-MM-DD"
+            placeholderTextColor={THEME.muted}
+            onChangeText={handleTextChange}
+            maxLength={10}
+            style={[s.textInput, { flex: 1, marginBottom: 0, borderColor }]}
           />
           {value && (
-            <Pressable onPress={onClear} style={{ padding: 4 }}>
+            <Pressable
+              onPress={() => {
+                setText("");
+                onClear();
+              }}
+              style={{ padding: 4 }}
+            >
               <MaterialCommunityIcons name="close-circle" size={20} color={THEME.muted} />
             </Pressable>
           )}
