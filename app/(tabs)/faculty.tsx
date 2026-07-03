@@ -301,9 +301,7 @@ export default function FacultyScheduleScreen() {
   const [blockEndDateNative, setBlockEndDateNative] = React.useState<Date | null>(null);
 
   // Exam/Unique Day form state
-  const [examDate, setExamDate] = React.useState("");
-  const [examDateNative, setExamDateNative] = React.useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [examDateNative, setExamDateNative] = React.useState<Date | null>(new Date());
   const [examLabel, setExamLabel] = React.useState("");
   const [examStartTime, setExamStartTime] = React.useState("08:00");
   const [examEndTime, setExamEndTime] = React.useState("12:00");
@@ -392,17 +390,11 @@ export default function FacultyScheduleScreen() {
   }
 
   async function handleAddExam() {
-    let dayKey: string | null;
-
-    if (isWeb) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
-        Alert.alert("Error", "Selecciona una fecha válida");
-        return;
-      }
-      dayKey = examDate;
-    } else {
-      dayKey = dateToDayKey(examDateNative);
+    if (!examDateNative) {
+      Alert.alert("Error", "Selecciona una fecha válida");
+      return;
     }
+    const dayKey = dateToDayKey(examDateNative);
 
     if (!examLabel.trim()) {
       Alert.alert("Error", examType === "exam" ? "Ingresa el nombre del examen" : "Ingresa el título");
@@ -419,7 +411,6 @@ export default function FacultyScheduleScreen() {
         description: examType === "unique" ? uniqueDescription.trim() : undefined,
         isUniqueDay: examType === "unique" ? true : undefined,
       });
-      setExamDate("");
       setExamDateNative(new Date());
       setExamLabel("");
       setUniqueDescription("");
@@ -788,44 +779,12 @@ export default function FacultyScheduleScreen() {
                 </View>
 
                 <Text style={s.inputLabel}>Fecha</Text>
-                {isWeb ? (
-                  <TextInput
-                    // @ts-ignore
-                    type="date"
-                    value={examDate}
-                    onChangeText={setExamDate}
-                    style={s.textInput}
-                  />
-                ) : (
-                  <>
-                    <Pressable
-                      onPress={() => setShowDatePicker(true)}
-                      style={({ pressed }) => [
-                        s.dateSelectorMobile,
-                        { opacity: pressed ? 0.9 : 1 },
-                      ]}
-                    >
-                      <Text style={{ fontWeight: "800", color: THEME.text, fontSize: 14 }}>
-                        {examDateNative.toLocaleDateString("es-AR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
-                      </Text>
-                    </Pressable>
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={examDateNative}
-                        mode="date"
-                        display="default"
-                        onChange={(_, selected) => {
-                          setShowDatePicker(false);
-                          if (selected) setExamDateNative(selected);
-                        }}
-                      />
-                    )}
-                  </>
-                )}
+                <DatePickerField
+                  label=""
+                  value={examDateNative}
+                  onChange={setExamDateNative}
+                  onClear={() => setExamDateNative(null)}
+                />
 
                 <Text style={s.inputLabel}>
                   {examType === "exam" ? "Materia / Nombre de Examen" : "Título Personalizado"}
