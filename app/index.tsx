@@ -1,34 +1,43 @@
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
-import { Redirect } from "expo-router";
+import { useRouter } from "expo-router";
 import { THEME } from "./src/lib/theme";
 import { useAuthUser } from "./src/hooks/useAuthUser";
 
 export default function Index() {
   const { user, loading: authLoading } = useAuthUser();
   const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
 
   React.useEffect(() => {
     if (!authLoading) {
       setLoading(false);
+      if (user) {
+        router.replace("/(tabs)/calendar");
+      } else {
+        router.replace("/(auth)/login");
+      }
     }
-  }, [authLoading]);
+  }, [user, authLoading]);
 
   // Fallback de 2.5 segundos para no quedarse colgado en el loading
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setLoading(false);
+      if (loading) {
+        setLoading(false);
+        if (user) {
+          router.replace("/(tabs)/calendar");
+        } else {
+          router.replace("/(auth)/login");
+        }
+      }
     }, 2500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [user, loading]);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg, justifyContent: "center" }}>
-        <ActivityIndicator size="large" color={THEME.primary} />
-      </View>
-    );
-  }
-
-  return user ? <Redirect href="/(tabs)/calendar" /> : <Redirect href="/(auth)/login" />;
+  return (
+    <View style={{ flex: 1, backgroundColor: THEME.bg, justifyContent: "center", alignItems: "center" }}>
+      <ActivityIndicator size="large" color={THEME.primary} />
+    </View>
+  );
 }
