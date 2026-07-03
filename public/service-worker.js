@@ -1,4 +1,4 @@
-const CACHE_NAME = 'caro-nails-v1';
+const CACHE_NAME = 'caro-nails-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -28,13 +28,32 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Estrategia Network-First: intenta red primero. Si falla, va al caché.
 self.addEventListener('fetch', (e) => {
+  // Solo interceptar peticiones GET locales (evita interceptar llamadas a APIs de Firebase o Firestore)
+  if (
+    e.request.method !== 'GET' || 
+    !e.request.url.startsWith(self.location.origin) ||
+    e.request.url.includes('/api/')
+  ) {
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request);
-    })
+    fetch(e.request)
+      .then((response) => {
+        // Guardar/Actualizar la copia en caché si la respuesta es exitosa
+        if (response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // En caso de estar sin conexión, servir desde el caché
+        return caches.match(e.request);
+      })
   );
 });
