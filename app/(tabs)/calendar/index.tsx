@@ -249,7 +249,7 @@ export default function CalendarIndexScreen() {
         {/* Modern Gradient Hero Welcome Block */}
         <View style={{ paddingHorizontal: 20, paddingTop: 16, alignItems: "center" }}>
           <View style={s.heroBanner}>
-            <Text style={s.heroTitle}>¡Hola Caro! ✨💅💖</Text>
+            <Text style={s.heroTitle}>🌸 ¡Hola Caro! 🌸</Text>
             
             <View style={s.heroBadgeContainer}>
               <View style={s.heroBadge}>
