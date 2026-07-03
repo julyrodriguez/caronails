@@ -520,6 +520,47 @@ export default function FacultyScheduleScreen() {
                   />
                 </View>
 
+                {/* Accesos rápidos para fechas */}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2, marginBottom: 14, justifyContent: "center" }}>
+                  <Pressable
+                    onPress={() => setBlockStartDateNative(new Date())}
+                    style={s.presetPill}
+                  >
+                    <Text style={s.presetPillText}>📅 Iniciar Hoy</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      const d = new Date();
+                      d.setMonth(d.getMonth() + 4);
+                      setBlockEndDateNative(d);
+                    }}
+                    style={s.presetPill}
+                  >
+                    <Text style={s.presetPillText}>⏱ Fin en 4 Meses</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      const d = new Date();
+                      d.setFullYear(d.getFullYear(), 11, 31); // 31 Diciembre
+                      setBlockEndDateNative(d);
+                    }}
+                    style={s.presetPill}
+                  >
+                    <Text style={s.presetPillText}>🎄 Fin de Año</Text>
+                  </Pressable>
+                  {(blockStartDateNative || blockEndDateNative) && (
+                    <Pressable
+                      onPress={() => {
+                        setBlockStartDateNative(null);
+                        setBlockEndDateNative(null);
+                      }}
+                      style={[s.presetPill, { backgroundColor: "rgba(223, 165, 89, 0.1)", borderColor: "rgba(223, 165, 89, 0.25)" }]}
+                    >
+                      <Text style={[s.presetPillText, { color: THEME.warning }]}>🧹 Limpiar Fechas</Text>
+                    </Pressable>
+                  )}
+                </View>
+
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 16 }}>
                   <TimePickerField
                     label="Hora Inicio"
@@ -917,6 +958,19 @@ const s = StyleSheet.create({
   },
   weekdayPillTextActive: {
     color: "#fff",
+  },
+  presetPill: {
+    backgroundColor: "rgba(212, 140, 158, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(212, 140, 158, 0.25)",
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  presetPillText: {
+    fontWeight: "900",
+    color: THEME.primary,
+    fontSize: 11,
   },
   textInput: {
     backgroundColor: THEME.bg,
