@@ -411,7 +411,7 @@ export default function FacultyScheduleScreen() {
             style={[s.tabButton, activeTab === "exams" && s.tabButtonActive]}
           >
             <Text style={[s.tabButtonText, activeTab === "exams" && s.tabButtonTextActive]}>
-              📝 Exámenes / Parciales
+              📝 Exámenes / Día Especial
             </Text>
           </Pressable>
         </View>
@@ -505,7 +505,7 @@ export default function FacultyScheduleScreen() {
                   style={s.textInput}
                 />
 
-                <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 12 }}>
+                <View style={{ gap: 12, marginTop: 4, marginBottom: 12 }}>
                   <DatePickerField
                     label="Fecha Inicio (Opcional)"
                     value={blockStartDateNative}

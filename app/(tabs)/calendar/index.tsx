@@ -241,41 +241,6 @@ export default function CalendarIndexScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
-      {/* Tabs navigation pill container */}
-      <View style={{ paddingHorizontal: 20, marginTop: 16, alignItems: "center" }}>
-        <View style={s.tabSwitcher}>
-          <Pressable
-            onPress={() => setMode("week")}
-            style={[s.tabButton, mode === "week" && s.tabButtonActive]}
-          >
-            <Text style={[s.tabButtonText, mode === "week" && s.tabButtonTextActive]}>
-              Vista Semanal
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setMode("calendar")}
-            style={[s.tabButton, mode === "calendar" && s.tabButtonActive]}
-          >
-            <Text style={[s.tabButtonText, mode === "calendar" && s.tabButtonTextActive]}>
-              Vista Mensual
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Date Switch Navigator */}
-      <View style={s.dateNavigatorContainer}>
-        <Pressable onPress={prevPeriod} style={s.dateNavArrow}>
-          <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"‹"}</Text>
-        </Pressable>
-
-        <Text style={s.dateNavTitle}>{periodTitle}</Text>
-
-        <Pressable onPress={nextPeriod} style={s.dateNavArrow}>
-          <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"›"}</Text>
-        </Pressable>
-      </View>
-
       {/* Main timeline / grilla wrapper */}
       <ScrollView
         contentContainerStyle={{ paddingBottom: 140 }}
@@ -315,6 +280,41 @@ export default function CalendarIndexScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Tabs navigation pill container */}
+        <View style={{ paddingHorizontal: 20, marginTop: 16, alignItems: "center" }}>
+          <View style={s.tabSwitcher}>
+            <Pressable
+              onPress={() => setMode("week")}
+              style={[s.tabButton, mode === "week" && s.tabButtonActive]}
+            >
+              <Text style={[s.tabButtonText, mode === "week" && s.tabButtonTextActive]}>
+                Vista Semanal
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setMode("calendar")}
+              style={[s.tabButton, mode === "calendar" && s.tabButtonActive]}
+            >
+              <Text style={[s.tabButtonText, mode === "calendar" && s.tabButtonTextActive]}>
+                Vista Mensual
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Date Switch Navigator */}
+        <View style={s.dateNavigatorContainer}>
+          <Pressable onPress={prevPeriod} style={s.dateNavArrow}>
+            <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"‹"}</Text>
+          </Pressable>
+
+          <Text style={s.dateNavTitle}>{periodTitle}</Text>
+
+          <Pressable onPress={nextPeriod} style={s.dateNavArrow}>
+            <Text style={{ fontSize: 20, color: THEME.primary, fontWeight: "900" }}>{"›"}</Text>
+          </Pressable>
         </View>
         {/* WEEK VIEW (Completely redesign into timeline layout) */}
         {mode === "week" ? (
