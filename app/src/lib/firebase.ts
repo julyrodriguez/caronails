@@ -25,11 +25,24 @@ export const auth =
     ? getAuth(app)
     : (() => {
         try {
+          // Intentar obtener una instancia ya inicializada para evitar el error de re-inicialización
+          const existingAuth = getAuth(app);
+          if (existingAuth) return existingAuth;
+        } catch (e) {
+          // Si no está inicializada aún, getAuth(app) lanzará un error y pasará a inicializarla abajo
+        }
+
+        try {
           return initializeAuth(app, {
             persistence: getReactNativePersistence(AsyncStorage),
           });
-        } catch {
-          // Fast Refresh: ya inicializado
-          return getAuth(app);
+        } catch (e) {
+          console.warn("initializeAuth failed, falling back to getAuth:", e);
+          try {
+            return getAuth(app);
+          } catch (err) {
+            console.error("Fallback getAuth also failed:", err);
+            throw err;
+          }
         }
       })();

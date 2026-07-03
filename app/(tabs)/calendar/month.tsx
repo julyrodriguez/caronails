@@ -113,8 +113,8 @@ export default function CalendarMonthDailyScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 600;
 
-  const { facultyDaysOfWeek, getBlocksForDay } = useFacultySchedule();
-  const { examDayKeys, getExamForDay } = useExamDays();
+  const { getBlocksForDay, hasFacultyOnDate } = useFacultySchedule();
+  const { examDayKeys, getExamsForDay } = useExamDays();
 
   const today = React.useMemo(() => {
     const d = new Date();
@@ -325,9 +325,11 @@ export default function CalendarMonthDailyScreen() {
 
           const isToday = sameDay(day, today);
           const has = totals.count > 0;
-          const hasFaculty = facultyDaysOfWeek.has(day.getDay());
-          const facultyBlocks = getBlocksForDay(day.getDay());
-          const exam = getExamForDay(k);
+          const hasFaculty = hasFacultyOnDate(day);
+          const facultyBlocks = getBlocksForDay(day.getDay(), day);
+          const dayExams = getExamsForDay(k);
+          const hasExam = dayExams.some((e) => !e.isUniqueDay);
+          const hasUniqueDay = dayExams.some((e) => e.isUniqueDay);
 
           return (
             <View
@@ -342,8 +344,10 @@ export default function CalendarMonthDailyScreen() {
                 style={{
                   backgroundColor: THEME.card,
                   borderWidth: 1,
-                  borderColor: exam
+                  borderColor: hasExam
                     ? THEME.examBorder
+                    : hasUniqueDay
+                    ? (THEME as any).primaryBorder ?? THEME.primary
                     : isToday
                     ? THEME.primary
                     : hasFaculty
@@ -408,18 +412,19 @@ export default function CalendarMonthDailyScreen() {
                         ))}
                       </View>
                     )}
-                    {exam && (
+                    {dayExams.map((e) => (
                       <Text
+                        key={e.id}
                         style={{
                           fontSize: 11,
                           fontWeight: "900",
-                          color: THEME.exam,
+                          color: e.isUniqueDay ? THEME.primary : THEME.exam,
                           marginTop: 4,
                         }}
                       >
-                        📝 Parcial: {exam.label} {exam.startTime ? `(${exam.startTime})` : ""}
+                        {e.isUniqueDay ? `✨ ${e.label}${e.description ? `: ${e.description}` : ""}` : `📝 Parcial: ${e.label}${e.startTime ? ` (${e.startTime})` : ""}`}
                       </Text>
-                    )}
+                    ))}
                   </View>
 
                   {/* Summary badges on right */}

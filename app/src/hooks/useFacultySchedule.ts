@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAccount } from "./useAccount";
+import { dayKeyFromDate } from "../lib/keys";
 
 export type FacultyBlock = {
   id: string;
@@ -19,14 +20,18 @@ export type FacultyBlock = {
   endTime: string; // "18:00"
   label: string; // "Facultad", nombre materia, etc.
   active: boolean;
+  startDate?: string; // "YYYY-MM-DD"
+  endDate?: string; // "YYYY-MM-DD"
 };
 
 export type ExamDay = {
   id: string;
   date: string; // "YYYY-MM-DD"
-  label: string; // "Parcial Matemática"
+  label: string; // "Parcial Matemática" or custom title
   startTime?: string;
   endTime?: string;
+  description?: string;
+  isUniqueDay?: boolean;
 };
 
 const WEEKDAY_NAMES: Record<number, string> = {
@@ -78,16 +83,38 @@ export function useFacultySchedule() {
     return set;
   }, [blocks]);
 
-  // Obtener bloques para un día de la semana
+  // Obtener bloques para un día de la semana y una fecha específica
   const getBlocksForDay = React.useCallback(
-    (dayOfWeek: number) => blocks.filter((b) => b.active && b.dayOfWeek === dayOfWeek),
+    (dayOfWeek: number, date?: Date) => {
+      if (!date) {
+        return blocks.filter((b) => b.active && b.dayOfWeek === dayOfWeek);
+      }
+      const dateStr = dayKeyFromDate(date);
+      return blocks.filter(
+        (b) =>
+          b.active &&
+          b.dayOfWeek === dayOfWeek &&
+          (!b.startDate || dateStr >= b.startDate) &&
+          (!b.endDate || dateStr <= b.endDate)
+      );
+    },
     [blocks]
   );
 
   // Verificar si una fecha tiene facultad
   const hasFacultyOnDate = React.useCallback(
-    (date: Date) => facultyDaysOfWeek.has(date.getDay()),
-    [facultyDaysOfWeek]
+    (date: Date) => {
+      const dayOfWeek = date.getDay();
+      const dateStr = dayKeyFromDate(date);
+      return blocks.some(
+        (b) =>
+          b.active &&
+          b.dayOfWeek === dayOfWeek &&
+          (!b.startDate || dateStr >= b.startDate) &&
+          (!b.endDate || dateStr <= b.endDate)
+      );
+    },
+    [blocks]
   );
 
   // CRUD
@@ -153,6 +180,12 @@ export function useExamDays() {
     [exams]
   );
 
+  // Obtener todos los exámenes/eventos por dayKey
+  const getExamsForDay = React.useCallback(
+    (dayKey: string) => exams.filter((e) => e.date === dayKey),
+    [exams]
+  );
+
   async function addExam(exam: Omit<ExamDay, "id">) {
     if (!accountId) return;
     const ref = collection(db, "accounts", accountId, "examDays");
@@ -170,7 +203,9 @@ export function useExamDays() {
     loading,
     examDayKeys,
     getExamForDay,
+    getExamsForDay,
     addExam,
     removeExam,
   };
 }
+

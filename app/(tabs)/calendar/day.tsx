@@ -67,10 +67,10 @@ export default function CalendarDayScreen() {
 
   // Faculty & Exams
   const { getBlocksForDay } = useFacultySchedule();
-  const { getExamForDay } = useExamDays();
+  const { getExamsForDay } = useExamDays();
 
-  const facultyBlocks = day ? getBlocksForDay(day.getDay()) : [];
-  const exam = dk ? getExamForDay(dk) : null;
+  const facultyBlocks = day ? getBlocksForDay(day.getDay(), day) : [];
+  const dayExams = dk ? getExamsForDay(dk) : [];
 
   // Filtrar turnos de Facultad
   const items = React.useMemo(
@@ -202,28 +202,43 @@ export default function CalendarDayScreen() {
               </View>
             )}
 
-            {exam && (
+            {dayExams.map((e) => (
               <View
+                key={e.id}
                 style={{
-                  backgroundColor: THEME.examSoft,
+                  backgroundColor: e.isUniqueDay ? "rgba(233, 210, 220, 0.3)" : THEME.examSoft,
                   borderWidth: 1,
-                  borderColor: THEME.examBorder,
+                  borderColor: e.isUniqueDay ? THEME.primary : THEME.examBorder,
                   borderRadius: 16,
                   padding: 12,
+                  marginTop: 6,
                 }}
               >
                 <Text
                   style={{
                     fontWeight: "900",
-                    color: THEME.exam,
+                    color: e.isUniqueDay ? THEME.text : THEME.exam,
                     textAlign: "center",
                     fontSize: 13,
                   }}
                 >
-                  📝 Examen: {exam.label} {exam.startTime ? `(${exam.startTime} - ${exam.endTime})` : ""}
+                  {e.isUniqueDay ? `✨ ${e.label}` : `📝 Examen: ${e.label}`} {e.startTime ? `(${e.startTime} - ${e.endTime})` : ""}
                 </Text>
+                {e.isUniqueDay && e.description ? (
+                  <Text
+                    style={{
+                      fontWeight: "700",
+                      color: THEME.muted,
+                      textAlign: "center",
+                      fontSize: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    {e.description}
+                  </Text>
+                ) : null}
               </View>
-            )}
+            ))}
 
             {/* Financial summary blocks layout */}
             <View style={{ gap: 10 }}>

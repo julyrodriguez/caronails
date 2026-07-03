@@ -20,6 +20,7 @@ import {
   useExamDays,
   weekdayName,
 } from "../src/hooks/useFacultySchedule";
+import { dayKeyFromDate } from "../src/lib/keys";
 
 const WEEKDAYS = [
   { label: "Lun", value: 1 },
@@ -98,6 +99,106 @@ function TimePickerField({
   );
 }
 
+function DatePickerField({
+  label,
+  value,
+  onChange,
+  onClear,
+  borderColor = THEME.border,
+}: {
+  label: string;
+  value: Date | null;
+  onChange: (date: Date) => void;
+  onClear: () => void;
+  borderColor?: string;
+}) {
+  const isWeb = Platform.OS === "web";
+  const [showPicker, setShowPicker] = React.useState(false);
+
+  if (isWeb) {
+    const dateStr = value ? dayKeyFromDate(value) : "";
+    return (
+      <View style={{ flex: 1 }}>
+        <Text style={s.inputSubLabel}>{label}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TextInput
+            // @ts-ignore
+            type="date"
+            value={dateStr}
+            onChangeText={(val) => {
+              if (!val) {
+                onClear();
+              } else {
+                const [y, m, d] = val.split("-").map(Number);
+                onChange(new Date(y, m - 1, d));
+              }
+            }}
+            style={[s.textInput, { flex: 1, marginBottom: 0 }]}
+          />
+          {value && (
+            <Pressable onPress={onClear} style={{ padding: 4 }}>
+              <MaterialCommunityIcons name="close-circle" size={20} color={THEME.muted} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={s.inputSubLabel}>{label}</Text>
+      <Pressable
+        onPress={() => setShowPicker(true)}
+        style={[
+          s.dateSelectorMobile,
+          {
+            flex: 1,
+            marginBottom: 0,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderColor,
+          },
+        ]}
+      >
+        <Text style={{ fontWeight: "800", color: value ? THEME.text : THEME.muted, fontSize: 13 }}>
+          {value
+            ? value.toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+            : "Sin fecha"}
+        </Text>
+        {value && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
+            style={{ padding: 4 }}
+          >
+            <MaterialCommunityIcons name="close-circle" size={16} color={THEME.muted} />
+          </Pressable>
+        )}
+      </Pressable>
+
+      {showPicker && (
+        <DateTimePicker
+          value={value || new Date()}
+          mode="date"
+          display="default"
+          onChange={(_, selected) => {
+            setShowPicker(false);
+            if (selected) onChange(selected);
+          }}
+        />
+      )}
+    </View>
+  );
+}
+
 export default function FacultyScheduleScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === "web";
@@ -125,8 +226,10 @@ export default function FacultyScheduleScreen() {
   const [blockEndTime, setBlockEndTime] = React.useState("18:00");
   const [blockLabel, setBlockLabel] = React.useState("");
   const [isSavingBlock, setIsSavingBlock] = React.useState(false);
+  const [blockStartDateNative, setBlockStartDateNative] = React.useState<Date | null>(null);
+  const [blockEndDateNative, setBlockEndDateNative] = React.useState<Date | null>(null);
 
-  // Exam form state
+  // Exam/Unique Day form state
   const [examDate, setExamDate] = React.useState("");
   const [examDateNative, setExamDateNative] = React.useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = React.useState(false);
@@ -134,6 +237,8 @@ export default function FacultyScheduleScreen() {
   const [examStartTime, setExamStartTime] = React.useState("08:00");
   const [examEndTime, setExamEndTime] = React.useState("12:00");
   const [isSavingExam, setIsSavingExam] = React.useState(false);
+  const [examType, setExamType] = React.useState<"exam" | "unique">("exam");
+  const [uniqueDescription, setUniqueDescription] = React.useState("");
 
   const [showPastExams, setShowPastExams] = React.useState(false);
 
@@ -181,9 +286,13 @@ export default function FacultyScheduleScreen() {
         endTime: blockEndTime,
         label: blockLabel.trim(),
         active: true,
+        startDate: blockStartDateNative ? dayKeyFromDate(blockStartDateNative) : undefined,
+        endDate: blockEndDateNative ? dayKeyFromDate(blockEndDateNative) : undefined,
       });
       setSelectedDay(null);
       setBlockLabel("");
+      setBlockStartDateNative(null);
+      setBlockEndDateNative(null);
       Alert.alert("Guardado", "Horario de cursada agregado correctamente 📚");
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "No se pudo guardar");
@@ -216,7 +325,7 @@ export default function FacultyScheduleScreen() {
 
     if (isWeb) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
-        Alert.alert("Error", "Selecciona una fecha de parcial válida");
+        Alert.alert("Error", "Selecciona una fecha válida");
         return;
       }
       dayKey = examDate;
@@ -225,7 +334,7 @@ export default function FacultyScheduleScreen() {
     }
 
     if (!examLabel.trim()) {
-      Alert.alert("Error", "Ingresa el nombre del examen");
+      Alert.alert("Error", examType === "exam" ? "Ingresa el nombre del examen" : "Ingresa el título");
       return;
     }
 
@@ -236,11 +345,19 @@ export default function FacultyScheduleScreen() {
         label: examLabel.trim(),
         startTime: examStartTime || undefined,
         endTime: examEndTime || undefined,
+        description: examType === "unique" ? uniqueDescription.trim() : undefined,
+        isUniqueDay: examType === "unique" ? true : undefined,
       });
       setExamDate("");
       setExamDateNative(new Date());
       setExamLabel("");
-      Alert.alert("Guardado", "Fecha de parcial agendada con éxito 📝");
+      setUniqueDescription("");
+      Alert.alert(
+        "Guardado",
+        examType === "exam"
+          ? "Fecha de parcial agendada con éxito 📝"
+          : "Día único guardado con éxito ✨"
+      );
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "No se pudo guardar");
     } finally {
@@ -333,7 +450,12 @@ export default function FacultyScheduleScreen() {
                         <View style={{ flex: 1, paddingRight: 6 }}>
                           <Text style={s.listItemDayName}>{weekdayName(b.dayOfWeek)}</Text>
                           <Text style={s.listItemLabel}>{b.label}</Text>
-                          <Text style={s.listItemTime}>⏱ {b.startTime} - {b.endTime}</Text>
+                          <Text style={s.listItemTime}>
+                            ⏱ {b.startTime} - {b.endTime}
+                            { (b.startDate || b.endDate) && (
+                              ` • 📅 ${b.startDate ? formatDisplayDate(b.startDate) : "..."} al ${b.endDate ? formatDisplayDate(b.endDate) : "..."}`
+                            )}
+                          </Text>
                         </View>
                         <Pressable
                           onPress={() => handleDeleteBlock(b.id)}
@@ -383,7 +505,22 @@ export default function FacultyScheduleScreen() {
                   style={s.textInput}
                 />
 
-                <View style={{ flexDirection: "row", gap: 12, marginTop: 12, marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 12 }}>
+                  <DatePickerField
+                    label="Fecha Inicio (Opcional)"
+                    value={blockStartDateNative}
+                    onChange={setBlockStartDateNative}
+                    onClear={() => setBlockStartDateNative(null)}
+                  />
+                  <DatePickerField
+                    label="Fecha Fin (Opcional)"
+                    value={blockEndDateNative}
+                    onChange={setBlockEndDateNative}
+                    onClear={() => setBlockEndDateNative(null)}
+                  />
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 4, marginBottom: 16 }}>
                   <TimePickerField
                     label="Hora Inicio"
                     value={blockStartTime}
@@ -415,21 +552,28 @@ export default function FacultyScheduleScreen() {
               {/* Context intro card */}
               <View style={[s.headerCard, { backgroundColor: THEME.examSoft, borderColor: THEME.examBorder }]}>
                 <MaterialCommunityIcons name="pencil-outline" size={24} color={THEME.exam} />
-                <Text style={[s.headerCardTitle, { color: THEME.exam }]}>Exámenes y Parciales</Text>
+                <Text style={[s.headerCardTitle, { color: THEME.exam }]}>Exámenes y Eventos Especiales</Text>
                 <Text style={s.headerCardSubtitle}>
-                  Resalta tus fechas importantes de evaluación para priorizar estudio en la agenda.
+                  Resalta tus fechas importantes de evaluación o días únicos en la agenda.
                 </Text>
               </View>
 
               {/* Upcoming list card */}
               {upcomingExams.length > 0 && (
                 <View style={s.card}>
-                  <Text style={[s.cardTitle, { color: THEME.exam }]}>Próximos Exámenes</Text>
+                  <Text style={[s.cardTitle, { color: THEME.exam }]}>Próximos Exámenes y Días Especiales</Text>
                   <View style={{ gap: 10 }}>
                     {upcomingExams.map((e) => (
                       <View key={e.id} style={s.listItemRow}>
                         <View style={{ flex: 1, paddingRight: 6 }}>
-                          <Text style={[s.listItemLabel, { fontSize: 15 }]}>{e.label}</Text>
+                          <Text style={[s.listItemLabel, { fontSize: 15 }]}>
+                            {e.isUniqueDay ? `✨ ${e.label}` : `📝 ${e.label}`}
+                          </Text>
+                          {e.isUniqueDay && e.description ? (
+                            <Text style={{ color: THEME.text, fontSize: 13, fontWeight: "600", marginTop: 2 }}>
+                              {e.description}
+                            </Text>
+                          ) : null}
                           <Text style={s.listItemTime}>
                             📅 {formatDisplayDate(e.date)} {e.startTime ? `• ⏱ ${e.startTime} - ${e.endTime}` : ""}
                           </Text>
@@ -457,7 +601,7 @@ export default function FacultyScheduleScreen() {
                     ]}
                   >
                     <Text style={{ fontWeight: "900", color: THEME.muted, fontSize: 13 }}>
-                      📂 Ver Exámenes Pasados ({pastExams.length})
+                      📂 Ver Eventos Pasados ({pastExams.length})
                     </Text>
                     <MaterialCommunityIcons
                       name={showPastExams ? "chevron-up" : "chevron-down"}
@@ -472,9 +616,16 @@ export default function FacultyScheduleScreen() {
                         {pastExams.map((e) => (
                           <View key={e.id} style={s.listItemRow}>
                             <View style={{ flex: 1, paddingRight: 6 }}>
-                              <Text style={[s.listItemLabel, { opacity: 0.6 }]}>{e.label}</Text>
+                              <Text style={[s.listItemLabel, { fontSize: 15, opacity: 0.6 }]}>
+                                {e.isUniqueDay ? `✨ ${e.label}` : `📝 ${e.label}`}
+                              </Text>
+                              {e.isUniqueDay && e.description ? (
+                                <Text style={{ color: THEME.text, fontSize: 13, fontWeight: "600", marginTop: 2, opacity: 0.6 }}>
+                                  {e.description}
+                                </Text>
+                              ) : null}
                               <Text style={[s.listItemTime, { opacity: 0.6 }]}>
-                                {formatDisplayDate(e.date)}
+                                📅 {formatDisplayDate(e.date)}
                               </Text>
                             </View>
                             <Pressable
@@ -493,9 +644,38 @@ export default function FacultyScheduleScreen() {
 
               {/* Add exam form card */}
               <View style={s.card}>
-                <Text style={s.cardTitle}>Agendar Examen</Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <Text style={[s.cardTitle, { marginBottom: 0 }]}>
+                    {examType === "exam" ? "Agendar Examen" : "Agendar Día Único"}
+                  </Text>
+                  
+                  <View style={{ flexDirection: "row", gap: 6, backgroundColor: "rgba(233, 210, 220, 0.3)", padding: 2, borderRadius: 10 }}>
+                    <Pressable
+                      onPress={() => setExamType("exam")}
+                      style={{
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 8,
+                        backgroundColor: examType === "exam" ? THEME.card : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "900", color: examType === "exam" ? THEME.text : THEME.muted }}>Examen</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setExamType("unique")}
+                      style={{
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 8,
+                        backgroundColor: examType === "unique" ? THEME.card : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "900", color: examType === "unique" ? THEME.text : THEME.muted }}>Día Único</Text>
+                    </Pressable>
+                  </View>
+                </View>
 
-                <Text style={s.inputLabel}>Fecha de Evaluación</Text>
+                <Text style={s.inputLabel}>Fecha</Text>
                 {isWeb ? (
                   <TextInput
                     // @ts-ignore
@@ -535,14 +715,29 @@ export default function FacultyScheduleScreen() {
                   </>
                 )}
 
-                <Text style={s.inputLabel}>Materia / Nombre de Examen</Text>
+                <Text style={s.inputLabel}>
+                  {examType === "exam" ? "Materia / Nombre de Examen" : "Título Personalizado"}
+                </Text>
                 <TextInput
                   value={examLabel}
                   onChangeText={setExamLabel}
-                  placeholder="Ej: Final de Fisiología, Parcial..."
+                  placeholder={examType === "exam" ? "Ej: Final de Fisiología, Parcial..." : "Ej: Feriado, Vacaciones, Evento Especial..."}
                   placeholderTextColor={THEME.muted}
                   style={s.textInput}
                 />
+
+                {examType === "unique" && (
+                  <>
+                    <Text style={s.inputLabel}>Descripción Personalizada</Text>
+                    <TextInput
+                      value={uniqueDescription}
+                      onChangeText={setUniqueDescription}
+                      placeholder="Ej: Viaje familiar o día de descanso..."
+                      placeholderTextColor={THEME.muted}
+                      style={s.textInput}
+                    />
+                  </>
+                )}
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 12, marginBottom: 16 }}>
                   <TimePickerField
@@ -560,10 +755,10 @@ export default function FacultyScheduleScreen() {
                 <Pressable
                   onPress={handleAddExam}
                   disabled={isSavingExam}
-                  style={[s.submitButton, { backgroundColor: THEME.exam }]}
+                  style={[s.submitButton, { backgroundColor: examType === "exam" ? THEME.exam : THEME.primary }]}
                 >
                   <Text style={s.submitButtonText}>
-                    {isSavingExam ? "Guardando..." : "＋ Agendar Fecha de Examen"}
+                    {isSavingExam ? "Guardando..." : examType === "exam" ? "＋ Agendar Fecha de Examen" : "＋ Agendar Día Único"}
                   </Text>
                 </Pressable>
               </View>

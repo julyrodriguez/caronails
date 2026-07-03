@@ -99,8 +99,8 @@ export default function CalendarIndexScreen() {
   const weekRef = React.useRef<FlatList<Date>>(null);
 
   // Hooks de datos
-  const { blocks, facultyDaysOfWeek, getBlocksForDay } = useFacultySchedule();
-  const { exams, examDayKeys, getExamForDay } = useExamDays();
+  const { blocks, getBlocksForDay, hasFacultyOnDate } = useFacultySchedule();
+  const { exams, examDayKeys, getExamsForDay } = useExamDays();
 
   const nextUpcomingExam = React.useMemo(() => {
     const todayStr = ymd(today);
@@ -213,8 +213,9 @@ export default function CalendarIndexScreen() {
 
   const modalKey = modalDay ? dayKeyFromDate(modalDay) : "";
   const modalTurns = modalKey ? monthByDay.get(modalKey) ?? [] : [];
-  const modalExam = modalDay ? getExamForDay(dayKeyFromDate(modalDay)) : null;
-  const modalFacultyBlocks = modalDay ? getBlocksForDay(modalDay.getDay()) : [];
+  const modalExams = modalDay ? getExamsForDay(dayKeyFromDate(modalDay)) : [];
+  const modalExam = modalExams.find((e) => !e.isUniqueDay) || null;
+  const modalFacultyBlocks = modalDay ? getBlocksForDay(modalDay.getDay(), modalDay) : [];
 
   React.useEffect(() => {
     setAnchor(new Date(today));
@@ -234,47 +235,12 @@ export default function CalendarIndexScreen() {
 
   const currentDayKey = dayKeyFromDate(selected);
   const selectedDayTurns = weekByDay.get(currentDayKey) ?? [];
-  const selectedDayExam = getExamForDay(currentDayKey);
-  const selectedDayFaculty = getBlocksForDay(selected.getDay());
+  const selectedDayExams = getExamsForDay(currentDayKey);
+  const selectedDayExam = selectedDayExams.find((e) => !e.isUniqueDay) || null;
+  const selectedDayFaculty = getBlocksForDay(selected.getDay(), selected);
 
   return (
     <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
-      {/* Modern Gradient Hero Welcome Block */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 16, alignItems: "center" }}>
-        <View style={s.heroBanner}>
-          <Text style={s.heroTitle}>Hola, Caro ✨</Text>
-          
-          <View style={s.heroBadgeContainer}>
-            <View style={s.heroBadge}>
-              <Text style={s.heroBadgeText}>
-                {selectedDayTurns.length} Turno{selectedDayTurns.length === 1 ? "" : "s"} hoy
-              </Text>
-            </View>
-            {selectedDayExam && (
-              <View style={[s.heroBadge, { backgroundColor: THEME.exam }]}>
-                <Text style={s.heroBadgeText}>📚 ¡Hoy rindes!</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Countdown widget */}
-          {nextUpcomingExam && daysUntilExam !== null && (
-            <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.18)", width: "100%", alignItems: "center" }}>
-              <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
-                anuncios importantes:
-              </Text>
-              <Text style={{ fontSize: 13, color: "#fff", fontWeight: "900", textAlign: "center" }} numberOfLines={1}>
-                📚 {nextUpcomingExam.label}: {daysUntilExam === 0
-                  ? "¡ES HOY! 🍀✨"
-                  : daysUntilExam === 1
-                  ? "¡Mañana! 📖"
-                  : `Faltan ${daysUntilExam} días`}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
       {/* Tabs navigation pill container */}
       <View style={{ paddingHorizontal: 20, marginTop: 16, alignItems: "center" }}>
         <View style={s.tabSwitcher}>
@@ -315,6 +281,41 @@ export default function CalendarIndexScreen() {
         contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Modern Gradient Hero Welcome Block */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, alignItems: "center" }}>
+          <View style={s.heroBanner}>
+            <Text style={s.heroTitle}>Hola, Caro ✨</Text>
+            
+            <View style={s.heroBadgeContainer}>
+              <View style={s.heroBadge}>
+                <Text style={s.heroBadgeText}>
+                  {selectedDayTurns.length} Turno{selectedDayTurns.length === 1 ? "" : "s"} hoy
+                </Text>
+              </View>
+              {selectedDayExam && (
+                <View style={[s.heroBadge, { backgroundColor: THEME.exam }]}>
+                  <Text style={s.heroBadgeText}>📚 ¡Hoy rindes!</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Countdown widget */}
+            {nextUpcomingExam && daysUntilExam !== null && (
+              <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.18)", width: "100%", alignItems: "center" }}>
+                <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                  anuncios importantes:
+                </Text>
+                <Text style={{ fontSize: 13, color: "#fff", fontWeight: "900", textAlign: "center" }} numberOfLines={1}>
+                  📚 {nextUpcomingExam.label}: {daysUntilExam === 0
+                    ? "¡ES HOY! 🍀✨"
+                    : daysUntilExam === 1
+                    ? "¡Mañana! 📖"
+                    : `Faltan ${daysUntilExam} días`}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
         {/* WEEK VIEW (Completely redesign into timeline layout) */}
         {mode === "week" ? (
           <View style={{ gap: 20 }}>
@@ -342,8 +343,10 @@ export default function CalendarIndexScreen() {
                 const k = dayKeyFromDate(item);
                 const isSel = sameDay(item, selected);
                 const arr = weekByDay.get(k) ?? [];
-                const hasExam = getExamForDay(k);
-                const hasFaculty = facultyDaysOfWeek.has(item.getDay());
+                const dayExams = getExamsForDay(k);
+                const hasExam = dayExams.find((e) => !e.isUniqueDay) || null;
+                const hasUniqueDay = dayExams.find((e) => e.isUniqueDay) || null;
+                const hasFaculty = hasFacultyOnDate(item);
 
                 return (
                   <Pressable
@@ -354,6 +357,7 @@ export default function CalendarIndexScreen() {
                       arr.length > 0 && !isSel && { borderColor: THEME.primary, borderWidth: 2 },
                       hasFaculty && !isSel && { borderColor: THEME.faculty, borderWidth: 2 },
                       hasExam && !isSel && { borderColor: THEME.exam, borderWidth: 2 },
+                      hasUniqueDay && !hasExam && !isSel && { borderColor: THEME.primary, borderWidth: 2 },
                     ] as any}
                   >
                     <Text style={[s.dayBubbleWeek, isSel && s.dayBubbleActiveText]}>
@@ -396,7 +400,7 @@ export default function CalendarIndexScreen() {
                 </View>
 
                 {/* The visual line list layout */}
-                {selectedDayTurns.length === 0 && !selectedDayExam && selectedDayFaculty.length === 0 ? (
+                {selectedDayTurns.length === 0 && selectedDayExams.length === 0 && selectedDayFaculty.length === 0 ? (
                   <View style={{ paddingVertical: 32, alignItems: "center" }}>
                     <Text style={{ fontSize: 28, marginBottom: 8 }}>🌸</Text>
                     <Text style={{ color: THEME.muted, fontWeight: "800", fontSize: 14 }}>
@@ -418,18 +422,33 @@ export default function CalendarIndexScreen() {
                       </View>
                     ))}
 
-                    {selectedDayExam && (
-                      <View style={s.timelineItem}>
-                        <View style={[s.timelinePin, { backgroundColor: THEME.exam }]} />
-                        <View style={[s.timelineContent, { backgroundColor: THEME.examSoft, borderColor: THEME.examBorder }]}>
-                          <Text style={[s.timelineLabel, { color: THEME.exam }]}>📝 EXAMEN / PARCIAL</Text>
-                          <Text style={s.timelineTitle}>{selectedDayExam.label}</Text>
+                    {selectedDayExams.map((e) => (
+                      <View key={e.id} style={s.timelineItem}>
+                        <View style={[s.timelinePin, { backgroundColor: e.isUniqueDay ? THEME.primary : THEME.exam }]} />
+                        <View
+                          style={[
+                            s.timelineContent,
+                            {
+                              backgroundColor: e.isUniqueDay ? "rgba(233, 210, 220, 0.3)" : THEME.examSoft,
+                              borderColor: e.isUniqueDay ? THEME.primary : THEME.examBorder,
+                            },
+                          ]}
+                        >
+                          <Text style={[s.timelineLabel, { color: e.isUniqueDay ? THEME.primary : THEME.exam }]}>
+                            {e.isUniqueDay ? "✨ DÍA ÚNICO / EVENTO" : "📝 EXAMEN / PARCIAL"}
+                          </Text>
+                          <Text style={s.timelineTitle}>{e.label}</Text>
+                          {e.isUniqueDay && e.description ? (
+                            <Text style={{ color: THEME.muted, fontSize: 13, fontWeight: "700", marginTop: 2, marginBottom: 4 }}>
+                              {e.description}
+                            </Text>
+                          ) : null}
                           <Text style={s.timelineTime}>
-                            {selectedDayExam.startTime ? `${selectedDayExam.startTime} - ${selectedDayExam.endTime}` : "Todo el día"}
+                            {e.startTime ? `${e.startTime} - ${e.endTime}` : "Todo el día"}
                           </Text>
                         </View>
                       </View>
-                    )}
+                    ))}
 
                     {/* 2. Appointments */}
                     {selectedDayTurns.map((ap: any) => (
@@ -515,8 +534,10 @@ export default function CalendarIndexScreen() {
                     const arr = monthByDay.get(k) ?? [];
                     const has = arr.length > 0;
                     const isToday = sameDay(d, today);
-                    const hasFaculty = facultyDaysOfWeek.has(d.getDay());
-                    const hasExam = examDayKeys.has(k);
+                    const hasFaculty = hasFacultyOnDate(d);
+                    const dayExams = getExamsForDay(k);
+                    const hasExam = dayExams.some((e) => !e.isUniqueDay);
+                    const hasUniqueDay = dayExams.some((e) => e.isUniqueDay);
 
                     return (
                       <View
@@ -538,6 +559,7 @@ export default function CalendarIndexScreen() {
                             has && !isToday && s.gridCellHasTurns,
                             hasFaculty && !has && !isToday && s.gridCellHasFaculty,
                             hasExam && !has && !isToday && s.gridCellHasExam,
+                            hasUniqueDay && !hasExam && !has && !isToday && s.gridCellHasUniqueDay,
                           ]}
                         >
                           <Text
@@ -547,6 +569,7 @@ export default function CalendarIndexScreen() {
                               has && !isToday && { color: THEME.primary },
                               hasFaculty && !has && !isToday && { color: THEME.faculty },
                               hasExam && !has && !isToday && { color: THEME.exam },
+                              hasUniqueDay && !hasExam && !has && !isToday && { color: THEME.primary },
                             ]}
                           >
                             {d.getDate()}
@@ -629,13 +652,28 @@ export default function CalendarIndexScreen() {
               </View>
             )}
 
-            {modalExam && (
-              <View style={[s.modalBannerBlock, { backgroundColor: THEME.examSoft, borderColor: THEME.examBorder }]}>
-                <Text style={{ fontWeight: "800", color: THEME.exam, fontSize: 13 }}>
-                  📝 Examen: {modalExam.label} {modalExam.startTime ? `(${modalExam.startTime})` : ""}
+            {modalExams.map((e) => (
+              <View
+                key={e.id}
+                style={[
+                  s.modalBannerBlock,
+                  {
+                    backgroundColor: e.isUniqueDay ? "rgba(233, 210, 220, 0.3)" : THEME.examSoft,
+                    borderColor: e.isUniqueDay ? THEME.primary : THEME.examBorder,
+                    marginTop: 6,
+                  },
+                ]}
+              >
+                <Text style={{ fontWeight: "800", color: e.isUniqueDay ? THEME.text : THEME.exam, fontSize: 13 }}>
+                  {e.isUniqueDay ? `✨ ${e.label}` : `📝 Examen: ${e.label}`} {e.startTime ? `(${e.startTime})` : ""}
                 </Text>
+                {e.isUniqueDay && e.description ? (
+                  <Text style={{ color: THEME.muted, fontSize: 12, marginTop: 2, fontWeight: "600" }}>
+                    {e.description}
+                  </Text>
+                ) : null}
               </View>
-            )}
+            ))}
 
             {/* List */}
             {modalTurns.length === 0 ? (
@@ -1013,6 +1051,11 @@ const s = StyleSheet.create({
   gridCellHasExam: {
     backgroundColor: "#FFEADF", // Richer high-contrast peach
     borderColor: THEME.exam,
+    borderWidth: 2,
+  },
+  gridCellHasUniqueDay: {
+    backgroundColor: "rgba(233, 210, 220, 0.2)",
+    borderColor: THEME.primary,
     borderWidth: 2,
   },
   gridCellText: {
