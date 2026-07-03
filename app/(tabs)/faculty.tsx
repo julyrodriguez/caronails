@@ -114,6 +114,55 @@ function DatePickerField({
 }) {
   const isWeb = Platform.OS === "web";
   const [showPicker, setShowPicker] = React.useState(false);
+  const [text, setText] = React.useState("");
+
+  // Sincronizar el texto del input cuando el valor cambie externamente
+  React.useEffect(() => {
+    if (value) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      setText(`${year}-${month}-${day}`);
+    } else {
+      setText("");
+    }
+  }, [value]);
+
+  const formatDateText = (inputText: string) => {
+    const cleaned = inputText.replace(/\D/g, "");
+    let formatted = "";
+    if (cleaned.length > 0) {
+      formatted += cleaned.substring(0, 4);
+    }
+    if (cleaned.length > 4) {
+      formatted += "-" + cleaned.substring(4, 6);
+    }
+    if (cleaned.length > 6) {
+      formatted += "-" + cleaned.substring(6, 8);
+    }
+    return formatted;
+  };
+
+  const handleTextChange = (inputText: string) => {
+    const formatted = formatDateText(inputText);
+    setText(formatted);
+
+    if (formatted.length === 10) {
+      const parts = formatted.split("-").map(Number);
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+      
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) {
+          onChange(date);
+        }
+      }
+    } else if (inputText === "") {
+      onClear();
+    }
+  };
 
   if (isWeb) {
     const dateStr = value ? dayKeyFromDate(value) : "";
@@ -148,33 +197,50 @@ function DatePickerField({
   return (
     <View style={{ flex: 1 }}>
       <Text style={s.inputSubLabel}>{label}</Text>
-      <Pressable
-        onPress={() => setShowPicker(true)}
-        style={[
-          s.dateSelectorMobile,
-          {
-            flex: 1,
-            marginBottom: 0,
-            flexDirection: "row",
-            justifyContent: "space-between",
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <TextInput
+          value={text}
+          placeholder="AAAA-MM-DD"
+          placeholderTextColor={THEME.muted}
+          keyboardType="numeric"
+          maxLength={10}
+          onChangeText={handleTextChange}
+          style={[
+            s.textInput,
+            {
+              flex: 1,
+              marginBottom: 0,
+              borderColor,
+              borderWidth: 1,
+              padding: 10,
+              borderRadius: 14,
+              fontSize: 13,
+              height: 48,
+            },
+          ]}
+        />
+        
+        <Pressable
+          onPress={() => setShowPicker(true)}
+          style={{
+            padding: 10,
+            backgroundColor: THEME.bg,
+            borderWidth: 1,
+            borderColor: THEME.border,
+            borderRadius: 14,
+            justifyContent: "center",
             alignItems: "center",
-            borderColor,
-          },
-        ]}
-      >
-        <Text style={{ fontWeight: "800", color: value ? THEME.text : THEME.muted, fontSize: 13 }}>
-          {value
-            ? value.toLocaleDateString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })
-            : "Sin fecha"}
-        </Text>
+            height: 48,
+            width: 48,
+          }}
+        >
+          <MaterialCommunityIcons name="calendar" size={20} color={THEME.primary} />
+        </Pressable>
+        
         {value && (
           <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
+            onPress={() => {
+              setText("");
               onClear();
             }}
             style={{ padding: 4 }}
@@ -182,7 +248,7 @@ function DatePickerField({
             <MaterialCommunityIcons name="close-circle" size={16} color={THEME.muted} />
           </Pressable>
         )}
-      </Pressable>
+      </View>
 
       {showPicker && (
         <DateTimePicker
