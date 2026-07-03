@@ -172,7 +172,7 @@ function DatePickerField({
 
   if (isWeb) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, marginBottom: 14 }}>
         <Text style={s.inputSubLabel}>{label}</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <TextInput
@@ -200,7 +200,7 @@ function DatePickerField({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, marginBottom: 14 }}>
       <Text style={s.inputSubLabel}>{label}</Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <TextInput
