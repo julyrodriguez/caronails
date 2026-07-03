@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import AppHeader from "../../src/components/AppHeader";
 import AppFooter from "../../src/components/AppFooter";
 import { THEME } from "../../src/lib/theme";
 import { dayKeyFromDate } from "../../src/lib/keys";
@@ -237,8 +236,7 @@ export default function CalendarMonthDailyScreen() {
   }, [params.dayKey]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Diario Mensual" subtitle={monthLabel} />
+    <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
 
       {/* Nav month header */}
       <View

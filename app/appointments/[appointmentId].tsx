@@ -15,7 +15,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, onSnapshot, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import AppHeader from "../src/components/AppHeader";
 import { db } from "../src/lib/firebase";
 import { useAccount } from "../src/hooks/useAccount";
 import { THEME } from "../src/lib/theme";
@@ -464,8 +463,7 @@ export default function AppointmentDetailScreen() {
 
   if (!appointmentId) {
     return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Detalle Turno" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
         <View style={{ padding: 20, alignItems: "center" }}>
           <Text style={{ color: THEME.muted, fontWeight: "700" }}>No se encontró el ID del turno.</Text>
         </View>
@@ -475,8 +473,7 @@ export default function AppointmentDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Detalle Turno" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator color={THEME.primary} />
         </View>
@@ -486,8 +483,7 @@ export default function AppointmentDetailScreen() {
 
   if (!appointment) {
     return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Detalle Turno" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
         <View style={{ padding: 20, alignItems: "center" }}>
           <Text style={{ color: THEME.muted, fontWeight: "700" }}>Este turno no existe o fue eliminado.</Text>
         </View>
@@ -503,8 +499,7 @@ export default function AppointmentDetailScreen() {
       : "/(tabs)/calendar";
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Editar Cita" />
+    <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
 
       <ScrollView
         ref={scrollRef}

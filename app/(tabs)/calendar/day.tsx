@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, Pressable, Platform, FlatList, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import AppHeader from "../../src/components/AppHeader";
 import AppFooter from "../../src/components/AppFooter";
 import { THEME } from "../../src/lib/theme";
 import { dayKeyFromDate } from "../../src/lib/keys";
@@ -102,8 +101,7 @@ export default function CalendarDayScreen() {
 
   if (!day) {
     return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Turnos del día" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
           <Text style={{ color: THEME.muted, fontWeight: "700" }}>Fecha inválida o no seleccionada</Text>
         </View>
@@ -120,8 +118,7 @@ export default function CalendarDayScreen() {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Detalle Diario" />
+    <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
 
       <FlatList
         data={sorted}

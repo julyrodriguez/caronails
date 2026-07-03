@@ -12,7 +12,6 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, onSnapshot } from "firebase/firestore";
 
-import AppHeader from "../src/components/AppHeader";
 import { THEME } from "../src/lib/theme";
 import { db } from "../src/lib/firebase";
 import { useAccount } from "../src/hooks/useAccount";
@@ -306,16 +305,14 @@ export default function ClientDetailScreen() {
 
   if (!client) {
     return (
-      <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-        <AppHeader title="Turnos" />
+      <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
         <AppFooter showMenu menuHref="/(tabs)/clients" showBack />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: THEME.bg }}>
-      <AppHeader title="Turnos de Clienta" />
+    <View style={{ flex: 1, backgroundColor: THEME.bg, paddingTop: Platform.OS === "ios" ? 44 : 20 }}>
 
       <ScrollView
         ref={scrollRef}
