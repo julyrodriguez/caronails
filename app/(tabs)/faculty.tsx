@@ -116,14 +116,14 @@ function DatePickerField({
   const [showPicker, setShowPicker] = React.useState(false);
   const [text, setText] = React.useState("");
 
-  // Sincronizar el texto del input cuando el valor cambie externamente
+  // Sincronizar el texto del input cuando el valor cambie externamente (solo si es una fecha válida)
   React.useEffect(() => {
-    if (value) {
+    if (value && value instanceof Date && !isNaN(value.getTime())) {
       const year = value.getFullYear();
       const month = String(value.getMonth() + 1).padStart(2, "0");
       const day = String(value.getDate()).padStart(2, "0");
       setText(`${year}-${month}-${day}`);
-    } else {
+    } else if (!value) {
       setText("");
     }
   }, [value]);
@@ -165,7 +165,7 @@ function DatePickerField({
   };
 
   if (isWeb) {
-    const dateStr = value ? dayKeyFromDate(value) : "";
+    const dateStr = value && value instanceof Date && !isNaN(value.getTime()) ? dayKeyFromDate(value) : "";
     return (
       <View style={{ flex: 1 }}>
         <Text style={s.inputSubLabel}>{label}</Text>
@@ -178,8 +178,17 @@ function DatePickerField({
               if (!val) {
                 onClear();
               } else {
-                const [y, m, d] = val.split("-").map(Number);
-                onChange(new Date(y, m - 1, d));
+                const parts = val.split("-").map(Number);
+                if (parts.length === 3) {
+                  const [y, m, d] = parts;
+                  if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                    const date = new Date(y, m - 1, d);
+                    if (!isNaN(date.getTime())) {
+                      onChange(date);
+                      return;
+                    }
+                  }
+                }
               }
             }}
             style={[s.textInput, { flex: 1, marginBottom: 0 }]}
