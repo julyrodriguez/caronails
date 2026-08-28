@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    
+    /* Luxe Studio Palette */
+    --color-bg: #FAF5F8;
+    --color-card: #FFFFFF;
+    --color-plum: #2E1E2F;
+    --color-muted: #826F84;
+    --color-primary: #D48C9E;
+    --color-primary-dark: #B96B80;
+    --color-primary-soft: #FBF0F4;
+    --color-border: #EED7E2;
+    --color-success: #4E9B78;
+    --color-success-soft: #EBF8F2;
+    --color-warning: #DFA559;
+    --color-faculty: #7D6B90;
+    --color-faculty-soft: #F3EEF7;
+    --color-exam: #C57D5D;
+    --color-exam-soft: #FAF1EC;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-plum);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  input, textarea, select {
+    user-select: text;
+  }
+}
+
+/* Custom Luxe Utilities */
+.font-serif-title {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(238, 215, 226, 0.7);
+}
+
+.glass-header {
+  background: rgba(250, 245, 248, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(238, 215, 226, 0.6);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(238, 215, 226, 0.6);
+}
+
+.subtle-shadow {
+  box-shadow: 0 8px 30px rgba(46, 30, 47, 0.04), 0 1px 3px rgba(46, 30, 47, 0.02);
+}
+
+.glow-primary {
+  box-shadow: 0 6px 20px rgba(212, 140, 158, 0.28);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 140, 158, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 140, 158, 0.5);
+}

@@ -30,7 +30,14 @@ export const checkReminders = onSchedule("every 10 minutes", async (event) => {
 
     const upcomingAppointments = snapshot.docs
       .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((app: any) => app.webReminderSent !== true && app.canceled !== true);
+      .filter((app: any) => {
+        if (app.webReminderSent === true || app.canceled === true) return false;
+        const name = (app.clientNameSnapshot || "").trim().toLowerCase();
+        if (!name || name === "facultad" || name.startsWith("facultad") || app.excludeFromNotifications === true) {
+          return false;
+        }
+        return true;
+      });
 
     if (upcomingAppointments.length === 0) {
       console.log("[Cron] Todos los turnos ya fueron notificados.");
