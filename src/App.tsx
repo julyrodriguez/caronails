@@ -20,9 +20,11 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return (
       <div className="min-h-screen bg-[#FAF5F8] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-3xl bg-gradient-to-tr from-[#D48C9E] to-[#EAA8B8] flex items-center justify-center text-white font-extrabold text-lg shadow-lg animate-pulse">
-            CN
-          </div>
+          <img
+            src="/iconCaro.jpeg"
+            alt="Caro Nails"
+            className="w-12 h-12 rounded-3xl object-cover border border-[#EED7E2] shadow-lg animate-pulse"
+          />
           <p className="text-xs text-[#826F84] font-bold">Cargando Caro Nails...</p>
         </div>
       </div>

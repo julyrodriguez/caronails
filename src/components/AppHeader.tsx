@@ -32,9 +32,11 @@ export default function AppHeader({
   return (
     <header className="sticky top-0 z-30 w-full glass-header px-4 sm:px-6 py-3.5 flex items-center justify-between border-b border-[#EED7E2]/70 shadow-xs">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D48C9E] to-[#E8A5B5] flex items-center justify-center text-white font-black text-sm shadow-md shadow-[#D48C9E]/25">
-          CN
-        </div>
+        <img
+          src="/iconCaro.jpeg"
+          alt="Caro Nails"
+          className="w-10 h-10 rounded-2xl object-cover border border-[#EED7E2] shadow-md shadow-[#D48C9E]/20 shrink-0"
+        />
         <div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-[#2E1E2F]">

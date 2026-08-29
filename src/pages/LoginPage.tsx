@@ -52,9 +52,11 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm glass-card rounded-3xl p-7 sm:p-8 subtle-shadow border border-[#EED7E2]/80 z-10 animate-fade-in">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-3xl mx-auto mb-4 bg-gradient-to-tr from-[#D48C9E] to-[#EAA8B8] flex items-center justify-center text-white font-extrabold text-2xl shadow-xl shadow-[#D48C9E]/30 tracking-tight">
-            CN
-          </div>
+          <img
+            src="/iconCaro.jpeg"
+            alt="Caro Nails Logo"
+            className="w-16 h-16 rounded-3xl mx-auto mb-4 object-cover border border-[#EED7E2] shadow-xl shadow-[#D48C9E]/25"
+          />
           <h1 className="text-2xl font-black tracking-tight text-[#2E1E2F]">
             Caro Nails
           </h1>
