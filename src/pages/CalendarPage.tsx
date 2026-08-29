@@ -564,33 +564,37 @@ export default function CalendarPage() {
                 <div
                   key={appt.id}
                   onClick={() => openEditModal(appt)}
-                  className="group bg-white rounded-3xl p-4 border border-[#EED7E2] subtle-shadow hover:border-[#D48C9E]/50 transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99]"
+                  className="group bg-white rounded-3xl p-3.5 sm:p-4 border border-[#EED7E2] subtle-shadow hover:border-[#D48C9E]/50 transition-all cursor-pointer flex items-center justify-between gap-3.5 active:scale-[0.99]"
                 >
-                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#FBF0F4] text-[#D48C9E] text-xs font-black border border-[#EED7E2] shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-[#D48C9E]" />
-                        <span>{fmtTime(apptDate)} hs</span>
-                      </span>
+                  {/* Left: 24hs Time Block */}
+                  <div className="w-16 h-14 rounded-2xl bg-[#FBF0F4] border border-[#EED7E2] flex flex-col items-center justify-center shrink-0 shadow-xs">
+                    <span className="text-sm font-black text-[#2E1E2F] tracking-tight leading-none">
+                      {fmtTime(apptDate)}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-[#D48C9E] uppercase tracking-wider mt-1 leading-none">
+                      hs
+                    </span>
+                  </div>
 
-                      <h4 className="font-black text-sm text-[#2E1E2F] truncate">
-                        {appt.clientNameSnapshot}
-                      </h4>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-[#826F84] font-medium mt-1.5 pl-0.5">
-                      <span className="truncate">{appt.description || "Servicio de Manicuría"}</span>
-                      <span>•</span>
-                      <span className="text-[#2E1E2F] font-black">${fmtMoney(appt.amount)}</span>
+                  {/* Middle: Client and Service Details */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-black text-sm sm:text-base text-[#2E1E2F] truncate">
+                      {appt.clientNameSnapshot}
+                    </h4>
+                    <p className="text-xs text-[#826F84] font-medium truncate mt-0.5">
+                      {appt.description || "Servicio de Manicuría"}
+                    </p>
+                    <div className="text-xs font-black text-[#D48C9E] mt-1">
+                      ${fmtMoney(appt.amount)}
                     </div>
                   </div>
 
-                  {/* Payment pill action button */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Right: Payment status button */}
+                  <div className="shrink-0">
                     <button
                       type="button"
                       onClick={(e) => handleTogglePaid(appt, e)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 ${
+                      className={`px-3 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs ${
                         appt.paid
                           ? "bg-[#EBF8F2] text-[#4E9B78] border border-[#A7F3D0]"
                           : "bg-[#FFFBEB] text-[#DFA559] border border-[#FDE68A]"

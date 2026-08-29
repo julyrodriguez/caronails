@@ -14,10 +14,9 @@ export function fmtMoney(n: number = 0) {
 
 export function fmtTime(d: Date | null) {
   if (!d) return "--:--";
-  return d.toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 export function fmtDate(d: Date | null) {
