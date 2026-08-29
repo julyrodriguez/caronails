@@ -81,6 +81,7 @@ export default function CalendarPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editAmount, setEditAmount] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPaid, setEditPaid] = useState(false);
 
   // Month range query for appointments
   const rangeStart = useMemo(() => {
@@ -195,6 +196,7 @@ export default function CalendarPage() {
     setSelectedAppt(appt);
     setEditAmount(String(appt.amount || ""));
     setEditDescription(appt.description || "");
+    setEditPaid(Boolean(appt.paid));
     setIsEditing(true);
   }
 
@@ -204,7 +206,18 @@ export default function CalendarPage() {
       await updateAppointment(accountId, selectedAppt.id, {
         amount: Number(editAmount) || 0,
         description: editDescription.trim(),
+        paid: editPaid,
       });
+
+      if (editPaid && !selectedAppt.paid) {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.8 },
+          colors: ["#D48C9E", "#4E9B78", "#FFD700"],
+        });
+      }
+
       setIsEditing(false);
       setSelectedAppt(null);
       setToast({
@@ -459,53 +472,66 @@ export default function CalendarPage() {
         )}
 
         {/* Selected Day Agenda Header */}
-        <div className="bg-white rounded-3xl p-5 border border-[#EED7E2] subtle-shadow space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#EED7E2] subtle-shadow space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-[#2E1E2F] capitalize">
+                <h3 className="text-base sm:text-lg font-black text-[#2E1E2F] capitalize truncate">
                   {selectedDate.toLocaleDateString("es-AR", {
                     weekday: "long",
                     day: "numeric",
-                    month: "long",
+                    month: "short",
                   })}
                 </h3>
                 {sameDay(selectedDate, new Date()) && (
-                  <span className="px-2 py-0.5 rounded-full bg-[#FBF0F4] text-[#D48C9E] text-[10px] font-extrabold border border-[#EED7E2]">
+                  <span className="px-2 py-0.5 rounded-full bg-[#FBF0F4] text-[#D48C9E] text-[10px] font-extrabold border border-[#EED7E2] shrink-0">
                     Hoy
                   </span>
                 )}
               </div>
               <p className="text-xs text-[#826F84] font-semibold mt-0.5">
-                {dayAppointments.length}{" "}
-                {dayAppointments.length === 1 ? "turno agendado" : "turnos agendados"}
+                {dayAppointments.length === 0
+                  ? "Sin turnos agendados"
+                  : `${dayAppointments.length} ${dayAppointments.length === 1 ? "turno agendado" : "turnos agendados"}`}
               </p>
             </div>
 
-            {/* Daily revenue metrics badge */}
-            <div className="text-right">
-              <div className="text-sm font-black text-[#2E1E2F]">
-                ${fmtMoney(dailyTotal)}
+            {/* Daily revenue metrics */}
+            {dailyTotal > 0 ? (
+              <div className="text-right shrink-0">
+                <div className="text-sm sm:text-base font-black text-[#2E1E2F]">
+                  ${fmtMoney(dailyTotal)}
+                </div>
+                <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold mt-0.5">
+                  {dailyPaidTotal > 0 && (
+                    <span className="text-[#4E9B78]">${fmtMoney(dailyPaidTotal)} cobrado</span>
+                  )}
+                  {dailyPendingTotal > 0 && (
+                    <span className="text-[#DFA559]">
+                      {dailyPaidTotal > 0 ? "• " : ""}${fmtMoney(dailyPendingTotal)} pendiente
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#826F84]">
-                <span className="text-[#4E9B78]">${fmtMoney(dailyPaidTotal)} cobrado</span>
-                {dailyPendingTotal > 0 && (
-                  <span>• ${fmtMoney(dailyPendingTotal)} pendiente</span>
-                )}
+            ) : (
+              <div className="text-right shrink-0">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold text-[#826F84] bg-[#FAF5F8] border border-[#EED7E2]">
+                  Día libre ✨
+                </span>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Banner of Faculty or Exam if any today */}
           {(dayFacultyBlocks.length > 0 || dayExams.length > 0) && (
-            <div className="pt-2 border-t border-[#EED7E2]/60 space-y-2">
+            <div className="pt-2.5 border-t border-[#EED7E2]/50 space-y-2">
               {dayFacultyBlocks.map((b) => (
                 <div
                   key={b.id}
                   className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#F3EEF7] border border-[#D8CFE0] text-[#7D6B90]"
                 >
                   <GraduationCap className="w-4 h-4 shrink-0" />
-                  <div className="text-xs font-bold">
+                  <div className="text-xs font-bold truncate">
                     <span>{b.label || "Facultad"}:</span>{" "}
                     <span className="font-semibold text-[#2E1E2F]">
                       {b.startTime} a {b.endTime} hs
@@ -520,7 +546,7 @@ export default function CalendarPage() {
                   className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#FAF1EC] border border-[#E8D2C5] text-[#C57D5D]"
                 >
                   <BookOpen className="w-4 h-4 shrink-0" />
-                  <div className="text-xs font-bold">
+                  <div className="text-xs font-bold truncate">
                     <span>Parcial / Examen:</span>{" "}
                     <span className="font-semibold text-[#2E1E2F]">
                       {e.label} {e.startTime ? `(${e.startTime} hs)` : ""}
@@ -651,6 +677,27 @@ export default function CalendarPage() {
                 placeholder="Ej: 15000"
                 className="w-full px-4 py-3 rounded-2xl bg-[#FAF5F8] border border-[#EED7E2] text-[#2E1E2F] font-bold text-sm focus:outline-none focus:border-[#D48C9E]"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
+                Estado del Cobro
+              </label>
+              <button
+                type="button"
+                onClick={() => setEditPaid(!editPaid)}
+                className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-between text-xs font-extrabold transition-all active:scale-[0.99] ${
+                  editPaid
+                    ? "bg-[#EBF8F2] border-[#A7F3D0] text-[#4E9B78]"
+                    : "bg-[#FFFBEB] border-[#FDE68A] text-[#DFA559]"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {editPaid ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                  <span>{editPaid ? "Cobrado / Pagado ✅" : "Pendiente de Cobro ⏳"}</span>
+                </span>
+                <span className="text-[10px] underline">Tocar para cambiar</span>
+              </button>
             </div>
 
             <div className="space-y-1.5">
