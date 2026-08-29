@@ -1,11 +1,11 @@
-// src/pages/FacultyPage.tsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   GraduationCap,
   BookOpen,
   Plus,
   Trash2,
   Clock,
+  ChevronDown,
   Calendar as CalendarIcon,
   Info,
   Check,
@@ -36,6 +36,18 @@ export default function FacultyPage() {
 
   const { blocks, addBlock, removeBlock } = useFacultySchedule();
   const { exams, addExam, removeExam } = useExamDays();
+
+  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const [showPastExams, setShowPastExams] = useState(false);
+
+  const upcomingExams = useMemo(
+    () => exams.filter((e) => e.date >= todayKey),
+    [exams, todayKey]
+  );
+  const pastExams = useMemo(
+    () => exams.filter((e) => e.date < todayKey),
+    [exams, todayKey]
+  );
 
   // Modals state
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -199,12 +211,12 @@ export default function FacultyPage() {
           </div>
 
           <div className="space-y-2">
-            {exams.length === 0 ? (
+            {upcomingExams.length === 0 ? (
               <div className="bg-white rounded-3xl p-6 text-center border border-[#EED7E2] text-xs font-medium text-[#826F84]">
-                No tienes exámenes registrados próximamente.
+                No tienes exámenes futuros registrados.
               </div>
             ) : (
-              exams.map((e) => (
+              upcomingExams.map((e) => (
                 <div
                   key={e.id}
                   className="bg-white rounded-3xl p-4 border border-[#EED7E2] subtle-shadow flex items-center justify-between gap-3"
@@ -227,11 +239,67 @@ export default function FacultyPage() {
                   <button
                     onClick={() => removeExam(e.id)}
                     className="p-2 rounded-xl text-[#826F84] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+                    title="Eliminar examen"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))
+            )}
+
+            {/* Collapsible Past Exams Section */}
+            {pastExams.length > 0 && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPastExams(!showPastExams)}
+                  className="w-full py-3 px-4 rounded-2xl bg-white border border-[#EED7E2] flex items-center justify-between text-xs font-bold text-[#826F84] hover:text-[#2E1E2F] hover:border-[#D48C9E]/50 transition-all shadow-xs"
+                >
+                  <span className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#826F84]" />
+                    <span>Exámenes y parciales pasados ({pastExams.length})</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showPastExams ? "rotate-180 text-[#D48C9E]" : ""
+                    }`}
+                  />
+                </button>
+
+                {showPastExams && (
+                  <div className="mt-2 space-y-2 animate-fade-in">
+                    {pastExams.map((e) => (
+                      <div
+                        key={e.id}
+                        className="bg-white/80 rounded-3xl p-3.5 border border-[#EED7E2] flex items-center justify-between gap-3 opacity-80 hover:opacity-100 transition-opacity"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#FAF5F8] border border-[#EED7E2] flex flex-col items-center justify-center text-[#826F84]">
+                            <BookOpen className="w-4 h-4" />
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-xs text-[#2E1E2F]">
+                              {e.label}
+                            </h4>
+                            <p className="text-[11px] text-[#826F84] font-medium mt-0.5">
+                              {e.date} {e.startTime ? `• ${e.startTime} hs` : ""} (Finalizado)
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => removeExam(e.id)}
+                          className="p-2 rounded-xl text-[#826F84] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+                          title="Eliminar examen pasado"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
