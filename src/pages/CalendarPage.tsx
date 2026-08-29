@@ -362,23 +362,27 @@ export default function CalendarPage() {
                 const hasFaculty = hasFacultyOnDate(date);
                 const hasExam = examDayKeys.has(dayKey);
 
+                const hasAppts = countAppts > 0;
+
                 return (
                   <button
                     key={idx}
                     onClick={() => setSelectedDate(date)}
                     className={`relative min-h-[58px] p-1 rounded-2xl flex flex-col items-center justify-between transition-all duration-150 active:scale-95 ${
                       isSelected
-                        ? "bg-[#D48C9E] text-white shadow-md shadow-[#D48C9E]/30"
+                        ? "bg-[#D48C9E] text-white shadow-md shadow-[#D48C9E]/35 border-2 border-[#D48C9E]"
                         : isToday
-                        ? "bg-[#FBF0F4] border border-[#D48C9E] text-[#2E1E2F]"
+                        ? `bg-[#FCD8E3] text-[#2E1E2F] font-black ${hasAppts ? "border-2 border-[#D48C9E]" : "border border-[#F3BCCB]"} shadow-xs`
+                        : hasAppts
+                        ? "bg-white text-[#2E1E2F] border-2 border-[#D48C9E] font-bold shadow-xs hover:bg-[#FBF0F4]"
                         : isCurrentMonth
                         ? "bg-[#FAF5F8]/70 hover:bg-white text-[#2E1E2F] border border-[#EED7E2]/50"
-                        : "bg-transparent text-[#826F84]/40 border border-transparent"
+                        : "bg-transparent text-[#826F84]/35 border border-transparent"
                     }`}
                   >
                     <span
                       className={`text-xs font-black ${
-                        isSelected ? "text-white" : isToday ? "text-[#D48C9E]" : ""
+                        isSelected ? "text-white" : isToday ? "text-[#2E1E2F]" : ""
                       }`}
                     >
                       {date.getDate()}
@@ -429,6 +433,7 @@ export default function CalendarPage() {
                 const count = allMonthAppointments.filter(
                   (a) => a.dayKey === dk && !a.canceled
                 ).length;
+                const hasAppts = count > 0;
                 const hasFaculty = hasFacultyOnDate(date);
                 const hasExam = examDayKeys.has(dk);
 
@@ -438,9 +443,11 @@ export default function CalendarPage() {
                     onClick={() => setSelectedDate(date)}
                     className={`flex-1 py-3 px-1 rounded-2xl flex flex-col items-center gap-1 transition-all ${
                       isSelected
-                        ? "bg-[#D48C9E] text-white shadow-md shadow-[#D48C9E]/30 scale-105"
+                        ? "bg-[#D48C9E] text-white shadow-md shadow-[#D48C9E]/35 border-2 border-[#D48C9E] scale-105"
                         : isToday
-                        ? "bg-[#FBF0F4] border border-[#D48C9E] text-[#2E1E2F]"
+                        ? `bg-[#FCD8E3] text-[#2E1E2F] font-black ${hasAppts ? "border-2 border-[#D48C9E]" : "border border-[#F3BCCB]"}`
+                        : hasAppts
+                        ? "bg-white text-[#2E1E2F] border-2 border-[#D48C9E] shadow-xs font-bold hover:bg-[#FBF0F4]"
                         : "bg-[#FAF5F8] text-[#2E1E2F] hover:bg-white border border-[#EED7E2]"
                     }`}
                   >

@@ -2,7 +2,7 @@
 import React from "react";
 import { signOut } from "firebase/auth";
 import { useLocation } from "wouter";
-import { LogOut, GraduationCap, Sparkles } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { auth } from "../lib/firebase";
 
 type Props = {
@@ -57,26 +57,14 @@ export default function AppHeader({
       </div>
 
       {showLogout && (
-        <div className="flex items-center gap-2">
-          {!hideSettings && (
-            <button
-              onClick={goToFaculty}
-              title="Horarios de Facultad"
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#FBF0F4] text-[#7D6B90] border border-[#EED7E2] hover:bg-[#F3EEF7] active:scale-95 transition-all"
-            >
-              <GraduationCap className="w-4 h-4" />
-            </button>
-          )}
-
-          <button
-            onClick={onLogout}
-            title="Cerrar Sesión"
-            className="h-9 px-3.5 rounded-xl flex items-center gap-1.5 bg-[#FAF5F8] text-[#826F84] border border-[#EED7E2] hover:text-[#2E1E2F] hover:bg-white active:scale-95 transition-all text-xs font-bold"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Salir</span>
-          </button>
-        </div>
+        <button
+          onClick={onLogout}
+          title="Cerrar Sesión"
+          className="h-9 px-3.5 rounded-xl flex items-center gap-1.5 bg-[#FAF5F8] text-[#826F84] border border-[#EED7E2] hover:text-[#2E1E2F] hover:bg-white active:scale-95 transition-all text-xs font-bold"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Salir</span>
+        </button>
       )}
     </header>
   );
