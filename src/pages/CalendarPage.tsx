@@ -566,25 +566,22 @@ export default function CalendarPage() {
                   onClick={() => openEditModal(appt)}
                   className="group bg-white rounded-3xl p-4 border border-[#EED7E2] subtle-shadow hover:border-[#D48C9E]/50 transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99]"
                 >
-                  <div className="flex items-center gap-3.5 truncate">
-                    {/* Time badge */}
-                    <div className="w-12 h-12 rounded-2xl bg-[#FBF0F4] border border-[#EED7E2] flex flex-col items-center justify-center shrink-0">
-                      <Clock className="w-3.5 h-3.5 text-[#D48C9E]" />
-                      <span className="text-xs font-black text-[#2E1E2F] mt-0.5">
-                        {fmtTime(apptDate)}
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#FBF0F4] text-[#D48C9E] text-xs font-black border border-[#EED7E2] shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-[#D48C9E]" />
+                        <span>{fmtTime(apptDate)} hs</span>
                       </span>
-                    </div>
 
-                    <div className="truncate">
-                      <h4 className="font-extrabold text-sm text-[#2E1E2F] truncate">
+                      <h4 className="font-black text-sm text-[#2E1E2F] truncate">
                         {appt.clientNameSnapshot}
                       </h4>
-                      <p className="text-xs text-[#826F84] font-medium truncate mt-0.5">
-                        {appt.description || "Servicio de Manicuría"}
-                      </p>
-                      <div className="text-xs font-black text-[#D48C9E] mt-1">
-                        ${fmtMoney(appt.amount)}
-                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-[#826F84] font-medium mt-1.5 pl-0.5">
+                      <span className="truncate">{appt.description || "Servicio de Manicuría"}</span>
+                      <span>•</span>
+                      <span className="text-[#2E1E2F] font-black">${fmtMoney(appt.amount)}</span>
                     </div>
                   </div>
 
