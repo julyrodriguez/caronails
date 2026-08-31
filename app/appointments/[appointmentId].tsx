@@ -354,40 +354,6 @@ export default function AppointmentDetailScreen() {
     return `${hh}:${mm}`;
   }
 
-  function applyQuickDateShift(daysAdd: number) {
-    const newDate = new Date(appointmentDate);
-    newDate.setDate(newDate.getDate() + daysAdd);
-    setAppointmentDate(newDate);
-  }
-
-  function setQuickDateToday() {
-    const today = new Date();
-    const newDate = new Date(appointmentDate);
-    newDate.setFullYear(today.getFullYear(), today.getMonth(), today.getDate());
-    setAppointmentDate(newDate);
-  }
-
-  function setQuickDateTomorrow() {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const newDate = new Date(appointmentDate);
-    newDate.setFullYear(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-    setAppointmentDate(newDate);
-  }
-
-  function addMinutesToAppointment(mins: number) {
-    const newDate = new Date(appointmentDate);
-    newDate.setMinutes(newDate.getMinutes() + mins, 0, 0);
-    setAppointmentDate(newDate);
-  }
-
-  function setExactHour(hStr: string) {
-    const [hh, mm] = hStr.split(":").map(Number);
-    const newDate = new Date(appointmentDate);
-    newDate.setHours(hh, mm, 0, 0);
-    setAppointmentDate(newDate);
-  }
-
   async function saveChanges() {
     if (!appointment || isSaving) return;
 
@@ -615,35 +581,6 @@ export default function AppointmentDetailScreen() {
               📅 Cambiar Día y Horario
             </Text>
 
-            {/* Quick date shortcuts */}
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {[
-                { label: "Hoy", onPress: setQuickDateToday },
-                { label: "Mañana", onPress: setQuickDateTomorrow },
-                { label: "-1 día", onPress: () => applyQuickDateShift(-1) },
-                { label: "+1 día", onPress: () => applyQuickDateShift(1) },
-                { label: "+7 días", onPress: () => applyQuickDateShift(7) },
-              ].map((b) => (
-                <Pressable
-                  key={b.label}
-                  onPress={b.onPress}
-                  style={({ pressed }) => ({
-                    backgroundColor: THEME.primarySoft,
-                    borderRadius: 10,
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderWidth: 1,
-                    borderColor: THEME.border,
-                    opacity: pressed ? 0.8 : 1,
-                  })}
-                >
-                  <Text style={{ fontWeight: "800", color: THEME.primary, fontSize: 12 }}>
-                    {b.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
             {/* Date and Time Inputs */}
             {isWeb ? (
               <View style={{ flexDirection: "row", gap: 10 }}>
@@ -771,77 +708,6 @@ export default function AppointmentDetailScreen() {
                 onChange={onTimeChange}
               />
             )}
-
-            {/* Quick Hour Selector Chips */}
-            <View style={{ marginTop: 4 }}>
-              <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 6 }}>
-                Atajos de Horarios frecuentes:
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {[
-                  "10:00",
-                  "11:00",
-                  "12:00",
-                  "13:00",
-                  "14:00",
-                  "15:00",
-                  "16:00",
-                  "17:00",
-                  "18:00",
-                  "19:00",
-                  "20:00",
-                ].map((h) => {
-                  const isSelected = formatTimeHM(appointmentDate) === h;
-                  return (
-                    <Pressable
-                      key={h}
-                      onPress={() => setExactHour(h)}
-                      style={({ pressed }) => ({
-                        backgroundColor: isSelected ? THEME.primary : THEME.primarySoft,
-                        borderRadius: 10,
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        opacity: pressed ? 0.85 : 1,
-                      })}
-                    >
-                      <Text
-                        style={{
-                          fontWeight: "800",
-                          color: isSelected ? "#fff" : THEME.primary,
-                          fontSize: 12,
-                        }}
-                      >
-                        {h}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Quick Minutes Adjustment */}
-            <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
-              {[-30, -15, 15, 30, 60].map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => addMinutesToAppointment(m)}
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    backgroundColor: THEME.bg,
-                    borderWidth: 1,
-                    borderColor: THEME.border,
-                    borderRadius: 10,
-                    paddingVertical: 6,
-                    alignItems: "center",
-                    opacity: pressed ? 0.8 : 1,
-                  })}
-                >
-                  <Text style={{ fontWeight: "800", color: THEME.text, fontSize: 11 }}>
-                    {m > 0 ? `+${m}m` : `${m}m`}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
 
           {/* Amount input */}

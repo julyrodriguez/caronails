@@ -213,23 +213,6 @@ export default function CalendarPage() {
     setIsEditing(true);
   }
 
-  function applyEditQuickDate(daysAdd: number) {
-    const [y, m, d] = editDate.split("-").map(Number);
-    const curr = new Date(y, m - 1, d);
-    curr.setDate(curr.getDate() + daysAdd);
-    setEditDate(dayKeyFromDate(curr));
-  }
-
-  function setEditDateToday() {
-    setEditDate(dayKeyFromDate(new Date()));
-  }
-
-  function setEditDateTomorrow() {
-    const t = new Date();
-    t.setDate(t.getDate() + 1);
-    setEditDate(dayKeyFromDate(t));
-  }
-
   async function handleSaveEdit() {
     if (!selectedAppt || !accountId) return;
 
@@ -772,49 +755,10 @@ export default function CalendarPage() {
             </div>
 
             {/* Fecha y Hora del Turno */}
-            <div className="p-4 rounded-2xl bg-white border border-[#EED7E2] space-y-3 shadow-xs">
+            <div className="p-4 rounded-2xl bg-white border border-[#EED7E2] space-y-2.5 shadow-xs">
               <div className="text-xs font-extrabold text-[#2E1E2F] uppercase tracking-wider flex items-center gap-1.5">
                 <CalendarIcon className="w-4 h-4 text-[#D48C9E]" />
                 <span>Fecha y Horario del Turno</span>
-              </div>
-
-              {/* Quick date shortcuts */}
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={setEditDateToday}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
-                >
-                  Hoy
-                </button>
-                <button
-                  type="button"
-                  onClick={setEditDateTomorrow}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
-                >
-                  Mañana
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyEditQuickDate(-1)}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
-                >
-                  -1 día
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyEditQuickDate(1)}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
-                >
-                  +1 día
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyEditQuickDate(7)}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
-                >
-                  +7 días
-                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -840,41 +784,6 @@ export default function CalendarPage() {
                     onChange={(e) => setEditTime(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-[#FAF5F8] border border-[#EED7E2] text-[#2E1E2F] font-bold text-xs focus:outline-none focus:border-[#D48C9E]"
                   />
-                </div>
-              </div>
-
-              {/* Quick Hours pills */}
-              <div className="pt-1">
-                <div className="text-[10px] font-bold text-[#826F84] uppercase tracking-wider mb-1.5 pl-0.5">
-                  Horarios rápidos:
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {[
-                    "10:00",
-                    "11:00",
-                    "12:00",
-                    "13:00",
-                    "14:00",
-                    "15:00",
-                    "16:00",
-                    "17:00",
-                    "18:00",
-                    "19:00",
-                    "20:00",
-                  ].map((h) => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setEditTime(h)}
-                      className={`px-2 py-1 rounded-lg text-xs font-extrabold transition-all ${
-                        editTime === h
-                          ? "bg-[#D48C9E] text-white shadow-xs"
-                          : "bg-[#FAF5F8] text-[#826F84] hover:text-[#2E1E2F] border border-[#EED7E2]"
-                      }`}
-                    >
-                      {h}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>
