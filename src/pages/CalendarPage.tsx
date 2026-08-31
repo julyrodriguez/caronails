@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { Timestamp } from "firebase/firestore";
 
 import AppHeader from "../components/AppHeader";
 import BottomNav from "../components/BottomNav";
@@ -79,9 +80,12 @@ export default function CalendarPage() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editPaid, setEditPaid] = useState(false);
+  const [editCanceled, setEditCanceled] = useState(false);
 
   // Month range query for appointments
   const rangeStart = useMemo(() => {
@@ -194,22 +198,79 @@ export default function CalendarPage() {
   // Handle Edit appointment
   function openEditModal(appt: Appointment) {
     setSelectedAppt(appt);
+    const d = appt.startAt?.toDate
+      ? appt.startAt.toDate()
+      : new Date(appt.startAt?.seconds * 1000 || 0);
+
+    setEditDate(dayKeyFromDate(d));
+    setEditTime(
+      `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+    );
     setEditAmount(String(appt.amount || ""));
     setEditDescription(appt.description || "");
     setEditPaid(Boolean(appt.paid));
+    setEditCanceled(Boolean(appt.canceled));
     setIsEditing(true);
+  }
+
+  function applyEditQuickDate(daysAdd: number) {
+    const [y, m, d] = editDate.split("-").map(Number);
+    const curr = new Date(y, m - 1, d);
+    curr.setDate(curr.getDate() + daysAdd);
+    setEditDate(dayKeyFromDate(curr));
+  }
+
+  function setEditDateToday() {
+    setEditDate(dayKeyFromDate(new Date()));
+  }
+
+  function setEditDateTomorrow() {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    setEditDate(dayKeyFromDate(t));
   }
 
   async function handleSaveEdit() {
     if (!selectedAppt || !accountId) return;
+
     try {
+      const [year, month, day] = editDate.split("-").map(Number);
+      const [hours, minutes] = editTime.split(":").map(Number);
+
+      if (!year || !month || !day || isNaN(hours) || isNaN(minutes)) {
+        setToast({
+          type: "warn",
+          title: "Fecha u hora inválida",
+          message: "Por favor verificá la fecha y el horario ingresados.",
+        });
+        return;
+      }
+
+      const newDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+      if (newDate.getDay() === 0) {
+        setToast({
+          type: "warn",
+          title: "Domingo cerrado",
+          message: "No se pueden agendar turnos los domingos. Por favor elegí otro día.",
+        });
+        return;
+      }
+
+      const dayKey = dayKeyFromDate(newDate);
+      const monthKey = monthKeyFromDate(newDate);
+
       await updateAppointment(accountId, selectedAppt.id, {
         amount: Number(editAmount) || 0,
         description: editDescription.trim(),
         paid: editPaid,
+        canceled: editCanceled,
+        startAt: Timestamp.fromDate(newDate),
+        dayKey,
+        monthKey,
       });
 
-      if (editPaid && !selectedAppt.paid) {
+      if (editPaid && !selectedAppt.paid && !editCanceled) {
         confetti({
           particleCount: 50,
           spread: 60,
@@ -223,7 +284,7 @@ export default function CalendarPage() {
       setToast({
         type: "ok",
         title: "Turno Actualizado",
-        message: "Los cambios fueron guardados exitosamente.",
+        message: "Día, horario y detalles actualizados exitosamente 💅",
       });
     } catch (err: any) {
       setToast({
@@ -597,27 +658,60 @@ export default function CalendarPage() {
                 <div
                   key={appt.id}
                   onClick={() => openEditModal(appt)}
-                  className="group bg-white rounded-3xl p-3.5 sm:p-4 border border-[#EED7E2] subtle-shadow hover:border-[#D48C9E]/50 transition-all cursor-pointer flex items-center justify-between gap-3.5 active:scale-[0.99]"
+                  className={`group bg-white rounded-3xl p-3.5 sm:p-4 border ${
+                    appt.canceled
+                      ? "border-red-200 bg-red-50/30 opacity-75"
+                      : "border-[#EED7E2] hover:border-[#D48C9E]/50"
+                  } subtle-shadow transition-all cursor-pointer flex items-center justify-between gap-3.5 active:scale-[0.99]`}
                 >
                   {/* Left: 24hs Time Block */}
-                  <div className="w-16 h-14 rounded-2xl bg-[#FBF0F4] border border-[#EED7E2] flex flex-col items-center justify-center shrink-0 shadow-xs">
-                    <span className="text-sm font-black text-[#2E1E2F] tracking-tight leading-none">
+                  <div
+                    className={`w-16 h-14 rounded-2xl border flex flex-col items-center justify-center shrink-0 shadow-xs ${
+                      appt.canceled
+                        ? "bg-red-50 border-red-200"
+                        : "bg-[#FBF0F4] border-[#EED7E2]"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-black tracking-tight leading-none ${
+                        appt.canceled ? "text-red-700 line-through" : "text-[#2E1E2F]"
+                      }`}
+                    >
                       {fmtTime(apptDate)}
                     </span>
-                    <span className="text-[10px] font-extrabold text-[#D48C9E] uppercase tracking-wider mt-1 leading-none">
+                    <span
+                      className={`text-[10px] font-extrabold uppercase tracking-wider mt-1 leading-none ${
+                        appt.canceled ? "text-red-500" : "text-[#D48C9E]"
+                      }`}
+                    >
                       hs
                     </span>
                   </div>
 
                   {/* Middle: Client and Service Details */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-black text-sm sm:text-base text-[#2E1E2F] truncate">
-                      {appt.clientNameSnapshot}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4
+                        className={`font-black text-sm sm:text-base truncate ${
+                          appt.canceled ? "text-gray-500 line-through" : "text-[#2E1E2F]"
+                        }`}
+                      >
+                        {appt.clientNameSnapshot}
+                      </h4>
+                      {appt.canceled && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-black border border-red-200 shrink-0">
+                          Cancelado
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-[#826F84] font-medium truncate mt-0.5">
                       {appt.description || "Servicio de Manicuría"}
                     </p>
-                    <div className="text-xs font-black text-[#D48C9E] mt-1">
+                    <div
+                      className={`text-xs font-black mt-1 ${
+                        appt.canceled ? "text-gray-400 line-through" : "text-[#D48C9E]"
+                      }`}
+                    >
                       ${fmtMoney(appt.amount)}
                     </div>
                   </div>
@@ -628,12 +722,16 @@ export default function CalendarPage() {
                       type="button"
                       onClick={(e) => handleTogglePaid(appt, e)}
                       className={`px-3 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs ${
-                        appt.paid
+                        appt.canceled
+                          ? "bg-gray-100 text-gray-500 border border-gray-200"
+                          : appt.paid
                           ? "bg-[#EBF8F2] text-[#4E9B78] border border-[#A7F3D0]"
                           : "bg-[#FFFBEB] text-[#DFA559] border border-[#FDE68A]"
                       }`}
                     >
-                      {appt.paid ? (
+                      {appt.canceled ? (
+                        <span>Cancelado</span>
+                      ) : appt.paid ? (
                         <>
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Pagó</span>
@@ -660,7 +758,7 @@ export default function CalendarPage() {
           setIsEditing(false);
           setSelectedAppt(null);
         }}
-        title="Detalles del Turno"
+        title="Detalles y Edición del Turno"
       >
         {selectedAppt && (
           <div className="space-y-4">
@@ -673,6 +771,115 @@ export default function CalendarPage() {
               </div>
             </div>
 
+            {/* Fecha y Hora del Turno */}
+            <div className="p-4 rounded-2xl bg-white border border-[#EED7E2] space-y-3 shadow-xs">
+              <div className="text-xs font-extrabold text-[#2E1E2F] uppercase tracking-wider flex items-center gap-1.5">
+                <CalendarIcon className="w-4 h-4 text-[#D48C9E]" />
+                <span>Fecha y Horario del Turno</span>
+              </div>
+
+              {/* Quick date shortcuts */}
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={setEditDateToday}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  onClick={setEditDateTomorrow}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
+                >
+                  Mañana
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEditQuickDate(-1)}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
+                >
+                  -1 día
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEditQuickDate(1)}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
+                >
+                  +1 día
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEditQuickDate(7)}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[#FAF5F8] border border-[#EED7E2] text-[#826F84] hover:text-[#D48C9E] hover:bg-[#FBF0F4] transition-colors"
+                >
+                  +7 días
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#826F84] pl-1">
+                    Día
+                  </label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAF5F8] border border-[#EED7E2] text-[#2E1E2F] font-bold text-xs focus:outline-none focus:border-[#D48C9E]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#826F84] pl-1">
+                    Horario
+                  </label>
+                  <input
+                    type="time"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#FAF5F8] border border-[#EED7E2] text-[#2E1E2F] font-bold text-xs focus:outline-none focus:border-[#D48C9E]"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Hours pills */}
+              <div className="pt-1">
+                <div className="text-[10px] font-bold text-[#826F84] uppercase tracking-wider mb-1.5 pl-0.5">
+                  Horarios rápidos:
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    "10:00",
+                    "11:00",
+                    "12:00",
+                    "13:00",
+                    "14:00",
+                    "15:00",
+                    "16:00",
+                    "17:00",
+                    "18:00",
+                    "19:00",
+                    "20:00",
+                  ].map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setEditTime(h)}
+                      className={`px-2 py-1 rounded-lg text-xs font-extrabold transition-all ${
+                        editTime === h
+                          ? "bg-[#D48C9E] text-white shadow-xs"
+                          : "bg-[#FAF5F8] text-[#826F84] hover:text-[#2E1E2F] border border-[#EED7E2]"
+                      }`}
+                    >
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Monto */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
                 Monto ($)
@@ -686,27 +893,47 @@ export default function CalendarPage() {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
-                Estado del Cobro
-              </label>
-              <button
-                type="button"
-                onClick={() => setEditPaid(!editPaid)}
-                className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-between text-xs font-extrabold transition-all active:scale-[0.99] ${
-                  editPaid
-                    ? "bg-[#EBF8F2] border-[#A7F3D0] text-[#4E9B78]"
-                    : "bg-[#FFFBEB] border-[#FDE68A] text-[#DFA559]"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {editPaid ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  <span>{editPaid ? "Cobrado / Pagado ✅" : "Pendiente de Cobro ⏳"}</span>
-                </span>
-                <span className="text-[10px] underline">Tocar para cambiar</span>
-              </button>
+            {/* Estado del Turno y Cobro */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
+                  Estado Cobro
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEditPaid(!editPaid)}
+                  className={`w-full py-2.5 px-3 rounded-2xl border flex flex-col items-center justify-center text-xs font-extrabold transition-all active:scale-[0.99] ${
+                    editPaid
+                      ? "bg-[#EBF8F2] border-[#A7F3D0] text-[#4E9B78]"
+                      : "bg-[#FFFBEB] border-[#FDE68A] text-[#DFA559]"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {editPaid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                    <span>{editPaid ? "Cobrado ✅" : "Pendiente ⏳"}</span>
+                  </span>
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
+                  Estado Turno
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEditCanceled(!editCanceled)}
+                  className={`w-full py-2.5 px-3 rounded-2xl border flex flex-col items-center justify-center text-xs font-extrabold transition-all active:scale-[0.99] ${
+                    editCanceled
+                      ? "bg-[#FEF2F2] border-[#FCA5A5] text-[#DC2626]"
+                      : "bg-[#FAF5F8] border-[#EED7E2] text-[#2E1E2F]"
+                  }`}
+                >
+                  <span>{editCanceled ? "Cancelado ❌" : "Activo ✨"}</span>
+                </button>
+              </div>
             </div>
 
+            {/* Descripción */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#826F84] pl-1">
                 Descripción / Servicio
@@ -720,6 +947,7 @@ export default function CalendarPage() {
               />
             </div>
 
+            {/* Botones de acción */}
             <div className="pt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
