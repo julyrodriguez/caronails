@@ -18,6 +18,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "../src/lib/firebase";
 import { useAccount } from "../src/hooks/useAccount";
 import { THEME } from "../src/lib/theme";
+import { dayKeyFromDate, monthKeyFromDate } from "../src/lib/keys";
 import AppFooter from "../src/components/AppFooter";
 
 import { scheduleAppointmentNotification, cancelNotification } from "../src/lib/notifications";
@@ -347,18 +348,65 @@ export default function AppointmentDetailScreen() {
     return () => unsub();
   }, [appointmentId, accountId]);
 
+  function formatTimeHM(d: Date) {
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function applyQuickDateShift(daysAdd: number) {
+    const newDate = new Date(appointmentDate);
+    newDate.setDate(newDate.getDate() + daysAdd);
+    setAppointmentDate(newDate);
+  }
+
+  function setQuickDateToday() {
+    const today = new Date();
+    const newDate = new Date(appointmentDate);
+    newDate.setFullYear(today.getFullYear(), today.getMonth(), today.getDate());
+    setAppointmentDate(newDate);
+  }
+
+  function setQuickDateTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const newDate = new Date(appointmentDate);
+    newDate.setFullYear(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+    setAppointmentDate(newDate);
+  }
+
+  function addMinutesToAppointment(mins: number) {
+    const newDate = new Date(appointmentDate);
+    newDate.setMinutes(newDate.getMinutes() + mins, 0, 0);
+    setAppointmentDate(newDate);
+  }
+
+  function setExactHour(hStr: string) {
+    const [hh, mm] = hStr.split(":").map(Number);
+    const newDate = new Date(appointmentDate);
+    newDate.setHours(hh, mm, 0, 0);
+    setAppointmentDate(newDate);
+  }
+
   async function saveChanges() {
     if (!appointment || isSaving) return;
 
     try {
+      if (appointmentDate.getDay() === 0) {
+        notify(
+          "warn",
+          "Domingo cerrado",
+          "No se pueden agendar turnos los domingos. Por favor seleccioná otro día."
+        );
+        return;
+      }
+
       setIsSaving(true);
 
       const ref = doc(db, "accounts", accountId, "appointments", appointment.id);
 
-      const dayKey = appointmentDate.toISOString().split("T")[0];
-      const monthKey = `${appointmentDate.getFullYear()}-${String(
-        appointmentDate.getMonth() + 1
-      ).padStart(2, "0")}`;
+      const dayKey = dayKeyFromDate(appointmentDate);
+      const monthKey = monthKeyFromDate(appointmentDate);
 
       // Cancel previous notification if exists
       const prevNotifId = (appointment as any).notificationId;
@@ -417,7 +465,7 @@ export default function AppointmentDetailScreen() {
     if (selectedTime) {
       const newDate = new Date(appointmentDate);
       newDate.setHours(selectedTime.getHours());
-      newDate.setMinutes(selectedTime.getMinutes());
+      newDate.setMinutes(selectedTime.getMinutes(), 0, 0);
       setAppointmentDate(newDate);
     }
   }
@@ -532,145 +580,269 @@ export default function AppointmentDetailScreen() {
               {appointment.clientNameSnapshot}
             </Text>
 
-            <Text style={{ color: THEME.muted, fontWeight: "700", textAlign: "center", marginTop: 4, fontSize: 14 }}>
-              Cita agendada: {appointmentDate.toLocaleDateString("es-AR")} -{" "}
-              {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+            <Text style={{ color: THEME.primary, fontWeight: "800", textAlign: "center", marginTop: 6, fontSize: 15, textTransform: "capitalize" }}>
+              📅 {appointmentDate.toLocaleDateString("es-AR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
             </Text>
+            <Text style={{ color: THEME.text, fontWeight: "900", textAlign: "center", marginTop: 2, fontSize: 16 }}>
+              ⏱ {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs
+            </Text>
+
+            {appointmentDate.getDay() === 0 && (
+              <View style={{ backgroundColor: "#FEF2F2", borderColor: "rgba(220,38,38,0.3)", borderWidth: 1, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10, marginTop: 10, alignItems: "center" }}>
+                <Text style={{ color: "#DC2626", fontWeight: "800", fontSize: 12 }}>
+                  ⚠️ Atención: La fecha seleccionada es domingo (Cerrado).
+                </Text>
+              </View>
+            )}
           </View>
 
-          {/* Date and Time Fields */}
-          <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>
-            Fecha y Hora de la Cita
-          </Text>
+          {/* Date & Time Settings Section */}
+          <View
+            style={{
+              backgroundColor: THEME.card,
+              borderWidth: 1,
+              borderColor: THEME.border,
+              borderRadius: 22,
+              padding: 16,
+              gap: 12,
+              shadowColor: "#2E1E2F",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.03,
+              shadowRadius: 10,
+            }}
+          >
+            <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 15 }}>
+              📅 Cambiar Día y Horario
+            </Text>
 
-          {isWeb ? (
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
-                  Fecha
-                </Text>
-                <TextInput
-                  // @ts-ignore
-                  type="date"
-                  value={appointmentDate.toISOString().split('T')[0]}
-                  onChangeText={(text) => {
-                    const [year, month, day] = text.split('-').map(Number);
-                    if (year && month && day) {
-                      const newDate = new Date(appointmentDate);
-                      newDate.setFullYear(year);
-                      newDate.setMonth(month - 1);
-                      newDate.setDate(day);
-                      setAppointmentDate(newDate);
-                    }
-                  }}
-                  style={{
+            {/* Quick date shortcuts */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {[
+                { label: "Hoy", onPress: setQuickDateToday },
+                { label: "Mañana", onPress: setQuickDateTomorrow },
+                { label: "-1 día", onPress: () => applyQuickDateShift(-1) },
+                { label: "+1 día", onPress: () => applyQuickDateShift(1) },
+                { label: "+7 días", onPress: () => applyQuickDateShift(7) },
+              ].map((b) => (
+                <Pressable
+                  key={b.label}
+                  onPress={b.onPress}
+                  style={({ pressed }) => ({
+                    backgroundColor: THEME.primarySoft,
+                    borderRadius: 10,
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: THEME.border,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ fontWeight: "800", color: THEME.primary, fontSize: 12 }}>
+                    {b.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Date and Time Inputs */}
+            {isWeb ? (
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
+                    Fecha
+                  </Text>
+                  <TextInput
+                    // @ts-ignore
+                    type="date"
+                    value={dayKeyFromDate(appointmentDate)}
+                    onChangeText={(text) => {
+                      const [year, month, day] = text.split("-").map(Number);
+                      if (year && month && day) {
+                        const newDate = new Date(appointmentDate);
+                        newDate.setFullYear(year, month - 1, day);
+                        setAppointmentDate(newDate);
+                      }
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 14,
+                      padding: 12,
+                      backgroundColor: THEME.bg,
+                      color: THEME.text,
+                      fontWeight: "700",
+                      fontSize: 15,
+                      textAlign: "center",
+                    }}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
+                    Hora
+                  </Text>
+                  <TextInput
+                    // @ts-ignore
+                    type="time"
+                    value={formatTimeHM(appointmentDate)}
+                    onChangeText={(text) => {
+                      const parts = text.split(":");
+                      const hours = parseInt(parts[0], 10);
+                      const minutes = parseInt(parts[1], 10);
+                      if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+                        const newDate = new Date(appointmentDate);
+                        newDate.setHours(hours, minutes, 0, 0);
+                        setAppointmentDate(newDate);
+                      }
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: THEME.border,
+                      borderRadius: 14,
+                      padding: 12,
+                      backgroundColor: THEME.bg,
+                      color: THEME.text,
+                      fontWeight: "700",
+                      fontSize: 15,
+                      textAlign: "center",
+                    }}
+                  />
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable
+                  onPress={() => setShowDatePicker(true)}
+                  style={({ pressed }) => ({
+                    flex: 1,
                     borderWidth: 1,
                     borderColor: THEME.border,
                     borderRadius: 14,
                     padding: 12,
-                    backgroundColor: THEME.card,
-                    color: THEME.text,
-                    fontWeight: "700",
-                    fontSize: 15,
-                    textAlign: "center",
-                  }}
-                />
-              </View>
+                    backgroundColor: THEME.primarySoft,
+                    opacity: pressed ? 0.9 : 1,
+                  })}
+                >
+                  <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
+                    📅 Fecha
+                  </Text>
+                  <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
+                    {appointmentDate.toLocaleDateString("es-AR")}
+                  </Text>
+                </Pressable>
 
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 4, paddingLeft: 2 }}>
-                  Hora
-                </Text>
-                <TextInput
-                  // @ts-ignore
-                  type="time"
-                  value={`${String(appointmentDate.getHours()).padStart(2, '0')}:${String(appointmentDate.getMinutes()).padStart(2, '0')}`}
-                  onChangeText={(text) => {
-                    const parts = text.split(':');
-                    const hours = parseInt(parts[0], 10);
-                    const minutes = parseInt(parts[1], 10);
-                    if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-                      const newDate = new Date(appointmentDate);
-                      newDate.setHours(hours);
-                      newDate.setMinutes(minutes);
-                      setAppointmentDate(newDate);
-                    }
-                  }}
-                  style={{
+                <Pressable
+                  onPress={() => setShowTimePicker(true)}
+                  style={({ pressed }) => ({
+                    flex: 1,
                     borderWidth: 1,
                     borderColor: THEME.border,
                     borderRadius: 14,
                     padding: 12,
-                    backgroundColor: THEME.card,
-                    color: THEME.text,
-                    fontWeight: "700",
-                    fontSize: 15,
-                    textAlign: "center",
-                  }}
-                />
+                    backgroundColor: THEME.primarySoft,
+                    opacity: pressed ? 0.9 : 1,
+                  })}
+                >
+                  <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
+                    🕐 Hora
+                  </Text>
+                  <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
+                    {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {!isWeb && showDatePicker && (
+              <DateTimePicker
+                value={appointmentDate}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+              />
+            )}
+
+            {!isWeb && showTimePicker && (
+              <DateTimePicker
+                value={appointmentDate}
+                mode="time"
+                is24Hour
+                display="default"
+                onChange={onTimeChange}
+              />
+            )}
+
+            {/* Quick Hour Selector Chips */}
+            <View style={{ marginTop: 4 }}>
+              <Text style={{ color: THEME.muted, fontSize: 11, fontWeight: "700", marginBottom: 6 }}>
+                Atajos de Horarios frecuentes:
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {[
+                  "10:00",
+                  "11:00",
+                  "12:00",
+                  "13:00",
+                  "14:00",
+                  "15:00",
+                  "16:00",
+                  "17:00",
+                  "18:00",
+                  "19:00",
+                  "20:00",
+                ].map((h) => {
+                  const isSelected = formatTimeHM(appointmentDate) === h;
+                  return (
+                    <Pressable
+                      key={h}
+                      onPress={() => setExactHour(h)}
+                      style={({ pressed }) => ({
+                        backgroundColor: isSelected ? THEME.primary : THEME.primarySoft,
+                        borderRadius: 10,
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        opacity: pressed ? 0.85 : 1,
+                      })}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: "800",
+                          color: isSelected ? "#fff" : THEME.primary,
+                          fontSize: 12,
+                        }}
+                      >
+                        {h}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
-          ) : (
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <Pressable
-                onPress={() => setShowDatePicker(true)}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 14,
-                  padding: 12,
-                  backgroundColor: THEME.primarySoft,
-                  opacity: pressed ? 0.9 : 1,
-                })}
-              >
-                <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
-                  📅 Fecha
-                </Text>
-                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
-                  {appointmentDate.toLocaleDateString("es-AR")}
-                </Text>
-              </Pressable>
 
-              <Pressable
-                onPress={() => setShowTimePicker(true)}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: THEME.border,
-                  borderRadius: 14,
-                  padding: 12,
-                  backgroundColor: THEME.primarySoft,
-                  opacity: pressed ? 0.9 : 1,
-                })}
-              >
-                <Text style={{ color: THEME.primary, fontSize: 11, fontWeight: "800" }}>
-                  🕐 Hora
-                </Text>
-                <Text style={{ color: THEME.text, fontWeight: "900", marginTop: 4, fontSize: 15 }}>
-                  {appointmentDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                </Text>
-              </Pressable>
+            {/* Quick Minutes Adjustment */}
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
+              {[-30, -15, 15, 30, 60].map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => addMinutesToAppointment(m)}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    backgroundColor: THEME.bg,
+                    borderWidth: 1,
+                    borderColor: THEME.border,
+                    borderRadius: 10,
+                    paddingVertical: 6,
+                    alignItems: "center",
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ fontWeight: "800", color: THEME.text, fontSize: 11 }}>
+                    {m > 0 ? `+${m}m` : `${m}m`}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-          )}
-
-          {!isWeb && showDatePicker && (
-            <DateTimePicker
-              value={appointmentDate}
-              mode="date"
-              display="default"
-              onChange={onDateChange}
-            />
-          )}
-
-          {!isWeb && showTimePicker && (
-            <DateTimePicker
-              value={appointmentDate}
-              mode="time"
-              display="default"
-              onChange={onTimeChange}
-            />
-          )}
+          </View>
 
           {/* Amount input */}
           <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14, paddingLeft: 4 }}>

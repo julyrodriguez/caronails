@@ -679,29 +679,48 @@ export default function CalendarIndexScreen() {
             {modalTurns.length === 0 ? (
               <Text style={s.modalEmptyText}>No hay citas programadas para esta fecha.</Text>
             ) : (
-              <ScrollView style={{ maxHeight: 200, marginVertical: 10 }}>
+              <ScrollView style={{ maxHeight: 240, marginVertical: 10 }}>
                 <View style={{ gap: 8 }}>
                   {modalTurns.map((ap: any) => (
-                    <View key={ap.id} style={s.modalTurnCard}>
-                      <View style={{ flex: 1 }}>
+                    <TouchableOpacity
+                      key={ap.id}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setModalOpen(false);
+                        router.push({
+                          pathname: "/appointments/[appointmentId]",
+                          params: {
+                            appointmentId: ap.id,
+                            backTo: "/(tabs)/calendar",
+                          },
+                        } as any);
+                      }}
+                      style={s.modalTurnCard}
+                    >
+                      <View style={{ flex: 1, paddingRight: 8 }}>
                         <Text style={{ fontWeight: "900", color: THEME.text, fontSize: 14 }}>
                           ⏱ {fmtHour(ap)} • {ap.clientNameSnapshot}
                         </Text>
                         {ap.description ? (
-                          <Text style={{ color: THEME.muted, fontSize: 12, marginTop: 2, fontWeight: "600" }}>
+                          <Text style={{ color: THEME.muted, fontSize: 12, marginTop: 2, fontWeight: "600" }} numberOfLines={1}>
                             {ap.description}
                           </Text>
                         ) : null}
                       </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 14 }}>
-                          ${ap.amount}
-                        </Text>
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: ap.paid ? THEME.success : THEME.exam }}>
-                          {ap.paid ? "Cobrado" : "Impago"}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <View style={{ alignItems: "flex-end" }}>
+                          <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 14 }}>
+                            ${ap.amount}
+                          </Text>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: ap.paid ? THEME.success : THEME.exam }}>
+                            {ap.paid ? "Cobrado" : "Impago"}
+                          </Text>
+                        </View>
+                        <Text style={{ color: THEME.primary, fontWeight: "900", fontSize: 16 }}>
+                          ›
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </ScrollView>
