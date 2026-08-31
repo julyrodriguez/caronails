@@ -476,9 +476,16 @@ export default function CalendarIndexScreen() {
                             </View>
                             
                             <View style={{ alignItems: "flex-end" }}>
-                              <Text style={s.timelinePrice}>${ap.amount}</Text>
-                              <Text style={[s.timelinePaidText, { color: ap.paid ? THEME.success : THEME.exam }]}>
-                                {ap.paid ? "Cobrado ✓" : "Impago"}
+                              <Text style={[s.timelinePrice, ap.canceled && { textDecorationLine: "line-through", color: THEME.muted }]}>
+                                ${ap.amount}
+                              </Text>
+                              <Text
+                                style={[
+                                  s.timelinePaidText,
+                                  { color: ap.canceled ? "#EF4444" : (ap.paid ? THEME.success : THEME.exam) },
+                                ]}
+                              >
+                                {ap.canceled ? "Cancelado ❌" : (ap.paid ? "Cobrado ✓" : "Impago")}
                               </Text>
                             </View>
                           </View>
@@ -709,11 +716,11 @@ export default function CalendarIndexScreen() {
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                         <View style={{ alignItems: "flex-end" }}>
-                          <Text style={{ fontWeight: "900", color: THEME.primary, fontSize: 14 }}>
+                          <Text style={[{ fontWeight: "900", color: THEME.primary, fontSize: 14 }, ap.canceled && { textDecorationLine: "line-through", color: THEME.muted }]}>
                             ${ap.amount}
                           </Text>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: ap.paid ? THEME.success : THEME.exam }}>
-                            {ap.paid ? "Cobrado" : "Impago"}
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: ap.canceled ? "#EF4444" : (ap.paid ? THEME.success : THEME.exam) }}>
+                            {ap.canceled ? "Cancelado" : (ap.paid ? "Cobrado" : "Impago")}
                           </Text>
                         </View>
                         <Text style={{ color: THEME.primary, fontWeight: "900", fontSize: 16 }}>
